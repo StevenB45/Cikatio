@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Styles supplémentaires pour React-DatePicker */
+.react-datepicker__header {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.react-datepicker__month-container {
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Correction spécifique pour le titre du mois */
+.react-datepicker__current-month {
+  font-size: 1rem;
+  padding: 10px 0;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #000;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.react-datepicker__day-name, 
+.react-datepicker__day {
+  width: 2rem;
+  line-height: 2rem;
+  margin: 0.2rem;
+}
+
+.react-datepicker__day--selected {
+  border-radius: 0.3rem;
+  background-color: #1976d2;
+  color: #fff;
+}
+
+.react-datepicker__triangle {
+  display: none;
+}
+
+/* Ajustement pour éviter le chevauchement du texte */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__input-container input {
+  width: 100%;
+  padding: 16.5px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.23);
+  border-radius: 4px;
+  font-size: 1rem;
+  line-height: 1.4375em;
+}
+
+.react-datepicker-popper {
+  z-index: 1300 !important;
+}
+
+/* Classe pour assurer que le datepicker s'affiche correctement */
+.date-picker-popper {
+  margin-top: 8px !important;
+}
