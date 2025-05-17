@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import ConfirmDialog from './ConfirmDialog';
+import CommonDialog from './CommonDialog';
 
 // Types pour les dialogues de confirmation
 interface ConfirmOptions {
@@ -46,35 +46,34 @@ export const DialogProvider: React.FC<DialogProviderProps> = ({ children }) => {
       new Promise<boolean>((resolve) => {
         setConfirmOptions(options);
         setConfirmDialogOpen(true);
-        setResolveConfirm(() => resolve);
       }),
     []
   );
 
-  // Gestionnaires pour les actions du dialogue de confirmation
-  const handleConfirm = useCallback(() => {
-    setConfirmDialogOpen(false);
+  const handleConfirm = () => {
     resolveConfirm(true);
-  }, [resolveConfirm]);
-
-  const handleCancel = useCallback(() => {
     setConfirmDialogOpen(false);
+  };
+
+  const handleCancel = () => {
     resolveConfirm(false);
-  }, [resolveConfirm]);
+    setConfirmDialogOpen(false);
+  };
 
   return (
     <DialogContext.Provider value={{ confirm }}>
       {children}
-      <ConfirmDialog
+      <CommonDialog
         open={confirmDialogOpen}
         title={confirmOptions.title}
-        message={confirmOptions.message}
-        confirmButtonText={confirmOptions.confirmButtonText}
-        cancelButtonText={confirmOptions.cancelButtonText}
+        onClose={handleCancel}
         onConfirm={handleConfirm}
-        onCancel={handleCancel}
+        confirmLabel={confirmOptions.confirmButtonText}
+        cancelLabel={confirmOptions.cancelButtonText}
         severity={confirmOptions.severity}
-      />
+      >
+        {confirmOptions.message}
+      </CommonDialog>
     </DialogContext.Provider>
   );
 };

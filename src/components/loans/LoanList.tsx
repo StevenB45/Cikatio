@@ -179,7 +179,9 @@ export const LoanList: React.FC<LoanListProps> = ({
 
           <TableCell>
             <Typography variant="body2">
-              {format(new Date(loan.dueAt), 'dd/MM/yyyy', { locale: fr })}
+              {loan.status === 'RETURNED' && loan.returnedAt
+                ? format(new Date(loan.returnedAt), 'dd/MM/yyyy', { locale: fr })
+                : format(new Date(loan.dueAt), 'dd/MM/yyyy', { locale: fr })}
             </Typography>
           </TableCell>
 

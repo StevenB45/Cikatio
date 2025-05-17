@@ -43,7 +43,7 @@ import {
   FilterTabOption,
   SortableTableHeader,
   DataTable,
-  ConfirmDialog,
+  CommonDialog,
   ItemTypeChip,
   useNotification
 } from '@/components/common';
@@ -87,32 +87,35 @@ export default function LoansPage() {
   // Fonction pour filtrer les prêts
   const filterLoans = useCallback((loan: Loan, filters: Record<string, any>) => {
     const { statusFilter, searchQuery } = filters;
-    
-    // Vérifier si le prêt existe
     if (!loan) return false;
-    
-    // Par défaut, filtrer les prêts retournés sauf si on demande explicitement "all"
-    if (statusFilter !== 'all' && loan.status === 'RETURNED') {
-      return false;
+
+    // Onglet "Tous" = prêts en cours (ACTIVE, OVERDUE, SCHEDULED)
+    if (statusFilter === 'current') {
+      if (!["ACTIVE", "OVERDUE", "SCHEDULED"].includes(loan.status)) return false;
     }
-    
+    // Onglet "En cours"
+    else if (statusFilter === 'ACTIVE') {
+      if (loan.status !== 'ACTIVE') return false;
+    }
+    // Onglet "En retard"
+    else if (statusFilter === 'OVERDUE') {
+      if (loan.status !== 'OVERDUE') return false;
+    }
+    // Onglet "Historique"
+    else if (statusFilter === 'RETURNED') {
+      if (loan.status !== 'RETURNED') return false;
+    }
+
     // Filtrer par type d'item si demandé
     if (itemTypeFilter !== 'all') {
       const item = items.find(i => i.id === loan.itemId);
       if (!item || item.category !== itemTypeFilter) return false;
     }
-    
-    // Filtrer par statut spécifique si demandé
-    if (statusFilter !== 'all' && statusFilter) {
-      if (loan.status !== statusFilter) return false;
-    }
-    
     // Filtre par recherche
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const item = items.find(i => i.id === loan.itemId);
       const borrower = loan.borrower;
-      
       const matchesSearch = 
         loan.id.toLowerCase().includes(query) ||
         item?.name.toLowerCase().includes(query) ||
@@ -120,26 +123,17 @@ export default function LoansPage() {
         borrower?.firstName?.toLowerCase().includes(query) ||
         borrower?.lastName?.toLowerCase().includes(query) ||
         borrower?.email?.toLowerCase().includes(query);
-      
       if (!matchesSearch) return false;
     }
-    
     // NOUVELLE VÉRIFICATION: Éliminer les prêts virtuels pour les items qui ont déjà un prêt réel
     if (loan.isVirtual) {
-      // Si c'est un prêt virtuel, vérifier si un prêt réel existe pour le même item
       const hasRealLoan = loans.some(otherLoan => 
-        // Le même item
         otherLoan.itemId === loan.itemId && 
-        // mais pas le même prêt
         otherLoan.id !== loan.id && 
-        // et c'est un prêt réel 
         !otherLoan.isVirtual
       );
-      
-      // Si un prêt réel existe, ne pas afficher le prêt virtuel
       if (hasRealLoan) return false;
     }
-    
     return true;
   }, [items, itemTypeFilter, loans]);
   
@@ -220,9 +214,9 @@ export default function LoansPage() {
       // console.log(`DEBUG - Filtering loan ${loan.id} (Item: ${loan.itemId}, Status: ${loan.status}, Virtual: ${loan.isVirtual ?? false}): Passes = ${passes}`);
       return passes;
     },
-    { statusFilter: 'ACTIVE' }, // Changer la valeur par défaut à 'ACTIVE' au lieu de 'all'
+    { statusFilter: 'current' }, // Changer la valeur par défaut à 'current' au lieu de 'all'
     0,
-    10
+    25 // Changer de 10 à 25 résultats par page
   );
   
   // Mémoriser les prêts triés
@@ -264,36 +258,19 @@ export default function LoansPage() {
 
   // Options pour les onglets de filtrage
   const statusTabOptions: FilterTabOption[] = useMemo(() => [
-    { label: "Tous", value: "all" },
-    { 
-      label: "En cours", 
-      value: "ACTIVE",
-      icon: <AssignmentIcon />,
-      color: 'primary',
-      default: true // Marquer cet onglet comme celui par défaut
-    },
-    { 
-      label: "En retard", 
-      value: "OVERDUE",
-      icon: <WarningIcon />, 
-      color: 'error.main'
-    }
+    { label: "Tous", value: "current", icon: <AssignmentIcon />, color: 'primary' },
+    { label: "En cours", value: "ACTIVE", icon: <AssignmentIcon />, color: 'primary' },
+    { label: "En retard", value: "OVERDUE", icon: <WarningIcon />, color: 'error.main' },
+    { label: "Historique", value: "RETURNED", icon: <HistoryIcon />, color: 'success.main' }
   ], []);
   
-  // État pour le filtre de statut - changé pour 'ACTIVE' par défaut
-  const [statusFilter, setStatusFilter] = useState<string>("ACTIVE");
+  // État pour le filtre de statut - changé pour 'current' par défaut
+  const [statusFilter, setStatusFilter] = useState<string>("current");
   
   // Gestionnaire pour le changement d'onglet
   const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
-    // Vérifier que la valeur est valide avant de mettre à jour le filtre
-    if (newValue === 'all' || newValue === 'ACTIVE' || newValue === 'OVERDUE') {
-      updateFilter('statusFilter', newValue);
-      setStatusFilter(newValue);
-    } else {
-      // Si une valeur invalide est fournie, revenir à "all"
-      updateFilter('statusFilter', 'all');
-      setStatusFilter('all');
-    }
+    updateFilter('statusFilter', newValue);
+    setStatusFilter(newValue);
   };
   
   // Gestionnaire pour la recherche
@@ -453,7 +430,7 @@ export default function LoansPage() {
       // Mettre à jour le statut de l'item
       const borrowedItem = items.find(i => i.id === newLoan.itemId);
       if (borrowedItem) {
-        const updatedItem = { ...borrowedItem, reservationStatus: 'BORROWED' };
+        const updatedItem = { ...borrowedItem, reservationStatus: 'BORROWED' as const };
         await fetch(`/api/items/${borrowedItem.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -719,7 +696,7 @@ export default function LoansPage() {
                 </Typography>
               </TableCell>
               <TableCell>{formatDate(loan.borrowedAt)}</TableCell>
-              <TableCell>{formatDate(loan.dueAt)}</TableCell>
+              <TableCell>{formatDate(loan.returnedAt || loan.dueAt)}</TableCell>
               <TableCell>
                 <StatusBadge status={loan.status} />
               </TableCell>
@@ -751,7 +728,7 @@ export default function LoansPage() {
                 )}
               </TableCell>
               <TableCell align="right">
-                {(loan.status === 'ACTIVE' || loan.status === 'OVERDUE' || loan.status === 'SCHEDULED') && (
+                {(loan.status === 'ACTIVE' || loan.status === 'OVERDUE') && (
                   <Button
                     size="small"
                     variant="outlined"
@@ -790,25 +767,21 @@ export default function LoansPage() {
       />
 
       {/* Dialogue de retour */}
-      <ConfirmDialog
+      <CommonDialog
         open={openReturnDialog}
         title="Confirmer le retour"
-        message={
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {returnError && (
-              <Typography color="error" variant="body1">{returnError}</Typography>
-            )}
-            <Typography>
-              Confirmer le retour de l'item:{' '}
-              <strong>{items.find(i => i.id === currentLoan.itemId)?.name}</strong> emprunté par{' '}
-              <strong>{currentLoan.borrower?.firstName} {currentLoan.borrower?.lastName}</strong>
-            </Typography>
-          </Box>
-        }
+        onClose={handleCloseReturnDialog}
         onConfirm={handleProcessReturn}
-        onCancel={handleCloseReturnDialog}
-        confirmButtonText="Confirmer le retour"
-      />
+      >
+        {returnError && (
+          <Typography color="error" variant="body1">{returnError}</Typography>
+        )}
+        <Typography>
+          Confirmer le retour de l'item:{' '}
+          <strong>{items.find(i => i.id === currentLoan.itemId)?.name}</strong> emprunté par{' '}
+          <strong>{currentLoan.borrower?.firstName} {currentLoan.borrower?.lastName}</strong>
+        </Typography>
+      </CommonDialog>
 
       {/* Modal d'ajout d'un nouvel usager */}
       <Dialog
@@ -827,16 +800,13 @@ export default function LoansPage() {
             initialPhone={newUserPhone}
             initialAddress={newUserAddress}
             initialIsAdmin={newUserIsAdmin}
-            onSubmit={({ firstName, lastName, email, phone, address, isAdmin }) => {
+            onSubmit={({ firstName, lastName, email }) => {
               const newUser: User = {
                 id: Date.now().toString(),
                 firstName,
                 lastName,
                 email,
-                phone,
-                address,
-                createdAt: new Date(),
-                isAdmin, // Ajout de la propriété manquante
+                createdAt: new Date()
               };
               setUsers(prevUsers => [...prevUsers, newUser]);
               setCurrentLoan(prev => ({ ...prev, borrowerId: newUser.id }));

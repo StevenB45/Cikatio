@@ -108,7 +108,7 @@ const StatsOverview: React.FC<StatsOverviewProps> = ({
   if (completedLoans.length > 0) {
     const durations = completedLoans.map(loan => {
       const borrowedDate = new Date(loan.borrowedAt);
-      const returnedDate = new Date(loan.returnedAt as Date);
+      const returnedDate = new Date(loan.returnedAt ? loan.returnedAt : loan.dueAt);
       const diffTime = returnedDate.getTime() - borrowedDate.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       

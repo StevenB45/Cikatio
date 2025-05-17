@@ -60,7 +60,6 @@ import {
   FilterTabs,
   SortableTableHeader,
   DataTable,
-  ConfirmDialog,
   ItemTypeChip,
   CommonDialog
 } from '@/components/common';
@@ -484,7 +483,7 @@ function ItemsPageContent() {
   // États pour les dialogues de confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemIdToDelete, setItemIdToDelete] = useState<string | null>(null);
-  const [deleteManyDialogOpen, setDeleteManyDialogOpen] = useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   
   // Demander la suppression d'un item
   const handleAskDeleteItem = useCallback((id: string) => {
@@ -515,12 +514,12 @@ function ItemsPageContent() {
   
   // Demander la suppression de plusieurs items
   const handleAskDeleteMany = useCallback(() => {
-    setDeleteManyDialogOpen(true);
+    setBulkDeleteDialogOpen(true);
   }, []);
   
   // Annuler la suppression de plusieurs items
   const handleCancelDeleteMany = useCallback(() => {
-    setDeleteManyDialogOpen(false);
+    setBulkDeleteDialogOpen(false);
   }, []);
   
   // Confirmer la suppression de plusieurs items
@@ -534,7 +533,7 @@ function ItemsPageContent() {
       showNotification(err.message || 'Erreur lors de la suppression multiple', 'error');
     }
     
-    setDeleteManyDialogOpen(false);
+    setBulkDeleteDialogOpen(false);
   }, [selectedItemIds, deleteItem, showNotification]);
   
   // Réserver un item
@@ -619,15 +618,12 @@ function ItemsPageContent() {
     const itemToUpdate = items.find(item => item.id === id);
     if (!itemToUpdate || itemToUpdate.reservationStatus !== 'RESERVED') return;
     
-    const previousReservedById = itemToUpdate.reservedById;
-    
     try {
       await updateItem({
         ...itemToUpdate,
         reservationStatus: 'AVAILABLE',
         reservedById: undefined,
-        reservedAt: undefined,
-        previousReservedById
+        reservedAt: undefined
       });
       
       showNotification('Réservation annulée avec succès', 'success');
@@ -884,7 +880,7 @@ function ItemsPageContent() {
               )}
             </TableCell>
             <TableCell>
-              <StatusBadge status={getItemStatus(item) === 'OUT_OF_ORDER' ? 'LOST' : (getItemStatus(item) as any)} />
+              <StatusBadge status={getItemStatus({ reservationStatus: item.reservationStatus })} />
             </TableCell>
             <TableCell align="right">
               <IconButton 
@@ -1326,26 +1322,24 @@ function ItemsPageContent() {
       />
 
       {/* Dialogue de confirmation de suppression */}
-      <ConfirmDialog
+      <CommonDialog
         open={deleteDialogOpen}
-        title="Confirmer la suppression"
-        message="Êtes-vous sûr de vouloir supprimer cet item ?"
+        title="Supprimer l'item"
+        onClose={() => setDeleteDialogOpen(false)}
         onConfirm={handleConfirmDeleteItem}
-        onCancel={handleCancelDeleteItem}
-        confirmButtonText="Supprimer"
-        cancelButtonText="Annuler"
-      />
+      >
+        Êtes-vous sûr de vouloir supprimer cet item ? Cette action est irréversible.
+      </CommonDialog>
 
       {/* Dialogue de confirmation de suppression multiple */}
-      <ConfirmDialog
-        open={deleteManyDialogOpen}
-        title="Confirmer la suppression multiple"
-        message={`Êtes-vous sûr de vouloir supprimer ${selectedItemIds.length} item(s) sélectionné(s) ?`}
+      <CommonDialog
+        open={bulkDeleteDialogOpen}
+        title="Supprimer les items sélectionnés"
+        onClose={() => setBulkDeleteDialogOpen(false)}
         onConfirm={handleConfirmDeleteMany}
-        onCancel={handleCancelDeleteMany}
-        confirmButtonText="Supprimer"
-        cancelButtonText="Annuler"
-      />
+      >
+        Êtes-vous sûr de vouloir supprimer les items sélectionnés ? Cette action est irréversible.
+      </CommonDialog>
     </MainLayout>
   );
 }

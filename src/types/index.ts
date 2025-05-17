@@ -49,8 +49,22 @@ export interface Item extends BaseEntity {
   category: ItemType;
   customId: string;
   available: boolean;
-  reservationStatus: 'AVAILABLE' | 'BORROWED' | 'RESERVED';
+  reservationStatus: 'AVAILABLE' | 'BORROWED' | 'RESERVED' | 'OUT_OF_ORDER';
   serviceCategory: ServiceCategory;
+  // Champs spécifiques pour les livres
+  author?: string | null;
+  publisher?: string | null;
+  yearPublished?: number | null;
+  isbn?: string | null;
+  description?: string | null;
+  coverImageUrl?: string | null;
+  // Champs spécifiques pour le matériel
+  brand?: string | null;
+  model?: string | null;
+  serialNumber?: string | null;
+  // Réservations
+  reservedById?: string | null;
+  reservedAt?: Date | null;
 }
 
 export interface User extends BaseEntity {
@@ -68,6 +82,9 @@ export interface Loan extends BaseEntity {
   returnedAt?: Date;
   status: LoanStatus;
   contexts?: LoanContext[];
+  // Pour l'affichage
+  borrower?: User;
+  isVirtual?: boolean;
 }
 
 export type StatusType = 'ACTIVE' | 'OVERDUE' | 'RETURNED' | 'OUT_OF_ORDER' | 'AVAILABLE' | 'RESERVED' | 'BORROWED' | 'LOST';

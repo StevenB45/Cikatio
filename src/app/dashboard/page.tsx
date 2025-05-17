@@ -105,7 +105,7 @@ export default async function Dashboard() {
       itemName: l.item?.name || 'Item inconnu',
       borrower: l.borrower ? `${l.borrower.firstName} ${l.borrower.lastName}` : 'Usager inconnu',
       date: l.borrowedAt ? formatDate(l.borrowedAt) : '-', 
-      dueDate: l.dueAt ? formatDate(l.dueAt) : '-', 
+      dueDate: l.returnedAt ? formatDate(l.returnedAt) : (l.dueAt ? formatDate(l.dueAt) : '-'), 
       status: l.status
     }));
 
@@ -116,7 +116,7 @@ export default async function Dashboard() {
       id: l.id,
       itemName: l.item?.name || 'Item inconnu',
       borrower: l.borrower ? `${l.borrower.firstName} ${l.borrower.lastName}` : 'Usager inconnu',
-      dueDate: l.dueAt ? formatDate(l.dueAt) : '-', 
+      dueDate: l.returnedAt ? formatDate(l.returnedAt) : (l.dueAt ? formatDate(l.dueAt) : '-'), 
     }));
 
   const stats: DashboardStatsData = {

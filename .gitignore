@@ -8,26 +8,166 @@
 
 # Testing
 /coverage
+.nyc_output
 
 # Next.js
 /.next/
 /out/
+/build
+.next
 
 # Production
 /build
+/dist
 
-# Misc
-.DS_Store
-*.pem
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
 
 # Debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
 
-# Local env files
-.env
-.env*.local
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+/prisma/*.db
+/prisma/*.db-journal
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Cache
+.cache
+.parcel-cache
+.next
+.nuxt
+.vuepress/dist
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+.vscode-test
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Temporary files
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+*.temp
+
+# Build files
+*.tsbuildinfo
+next-env.d.ts
+
+# Security
+# Sécurité : ne jamais commiter de clés privées ou certificats !
+*.pem
+*.cert
+*.crt
+*.csr
+*.p12
+*.pfx
+*.p8
+*.p7b
+*.p7c
+*.p7m
+*.p7s
+*.p8e
+*.p8s
+*.p8x
+*.p8y
+*.p8z
+
+# Backup files
+*.bak
+*.backup
+*~
+*.old
+*.orig
+*.rej
+*.swp
+*.swo
+*.tmp
+*.temp
+*.log
+*.gz
+*.zip
+*.tar
+*.rar
+*.7z
+*.bz2
+*.xz
+*.lz
+*.lzma
+*.lzo
+*.lz4
+*.zst
+*.zstd
+*.z
+*.Z
+*.tgz
+*.tbz2
+*.txz
+*.tlz
+*.tlz4
+*.tzst
+*.tzstd
+*.tz
+*.tZ
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.lz
+*.tar.lzma
+*.tar.lzo
+*.tar.lz4
+*.tar.zst
+*.tar.zstd
+*.tar.z
+*.tar.Z
 
 # Vercel
 .vercel
@@ -35,7 +175,3 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
-
-# Prisma
-/prisma/*.db
-/prisma/*.db-journal

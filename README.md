@@ -32,11 +32,11 @@ Après la configuration et le build, il est recommandé d'initialiser la base av
 npx prisma db seed
 ```
 
-Cela créera un compte admin :
-- **Email** : admin@cikatio.fr
-- **Mot de passe** : Admin123!
-
-Pensez à changer ce mot de passe après la première connexion.
+⚠️ **IMPORTANT - SÉCURITÉ** :
+- Le compte admin par défaut est temporaire et doit être modifié immédiatement
+- Changez le mot de passe par défaut dès la première connexion
+- Utilisez un mot de passe fort (minimum 12 caractères, incluant majuscules, minuscules, chiffres et caractères spéciaux)
+- Activez l'authentification à deux facteurs si possible
 
 ## 🛠️ Déploiement rapide (Recommandé pour les débutants)
 
@@ -191,7 +191,7 @@ sudo -u postgres psql
 Dans le shell PostgreSQL :
 ```sql
 CREATE DATABASE cikatio_prod;
-CREATE USER cikatio_user WITH PASSWORD 'votre_mot_de_passe_securise';
+CREATE USER cikatio_user WITH <mot_de_passe> '<mot_de_passe>';
 GRANT ALL PRIVILEGES ON DATABASE cikatio_prod TO cikatio_user;
 \q
 ```
@@ -213,7 +213,7 @@ nano .env
 
 Configuration minimale du fichier `.env` :
 ```env
-DATABASE_URL="postgresql://cikatio_user:votre_mot_de_passe_securise@localhost:5432/cikatio_prod?schema=public"
+DATABASE_URL="postgresql://[USER]:<mot_de_passe>@[HOST]:[PORT]/[DATABASE]?schema=public"
 NEXTAUTH_SECRET="votre_cle_secrete_generee"
 NEXTAUTH_URL="https://votre-domaine.com"
 ```
@@ -461,7 +461,7 @@ pm2 save # Sauvegarde la nouvelle liste (sans cikatio)
 
 ## Dépannage
 - **Vérifiez les versions :** `node -v`, `npm -v`, `psql --version`
-- **Vérifiez la connexion à PostgreSQL :** `psql -U cikatio_user -d cikatio_prod -h localhost` (entrez le mot de passe lorsque demandé)
+- **Vérifiez la connexion à PostgreSQL :** `psql -U cikatio_user -d cikatio_prod -h localhost` (entrez le <mot_de_passe> lorsque demandé)
 - **Consultez les logs PM2 :** `pm2 logs cikatio`
 - **Consultez les logs système :** `journalctl -u postgresql` (pour les erreurs PostgreSQL)
 - **Problèmes de build :** Supprimez `node_modules` et `.next` et réessayez `npm ci` et `npm run build`.
@@ -476,7 +476,7 @@ pm2 save # Sauvegarde la nouvelle liste (sans cikatio)
 ---
 
 ## Sécurité & bonnes pratiques
-- **Mot de passe PostgreSQL :** Utilisez un mot de passe fort et unique pour `cikatio_user`.
+- **Mot de passe PostgreSQL :** Utilisez un mot de passe fort et unique pour cikatio_user.
 - **Variables d'environnement :** Ne commitez jamais votre fichier `.env` contenant des secrets dans Git. Assurez-vous que `.env` est dans votre fichier `.gitignore`.
 - **HTTPS :** Configurez un reverse proxy (comme Nginx ou Traefik) devant votre application Node.js pour gérer le HTTPS (SSL/TLS), les en-têtes de sécurité, et potentiellement la mise en cache ou la limitation de débit.
 - **Pare-feu :** Configurez un pare-feu (comme `ufw`) sur votre serveur pour n'autoriser que les ports nécessaires (ex: 80 pour HTTP, 443 pour HTTPS, 22 pour SSH).
@@ -539,24 +539,26 @@ cp .env.example .env
 2. Configurez les variables dans `.env` :
 ```env
 # Base de données
-DATABASE_URL="postgresql://user:password@localhost:5432/database?schema=public"
+DATABASE_URL="postgresql://[USER]:<mot_de_passe>@[HOST]:[PORT]/[DATABASE]?schema=public"
 
 # NextAuth
-NEXTAUTH_SECRET="generate-a-secure-random-string"
-NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="[GÉNÉRER_UNE_CLÉ_SECRÈTE_ALÉATOIRE]"
+NEXTAUTH_URL="[URL_DE_VOTRE_APPLICATION]"
 
 # Email (optionnel)
-SMTP_HOST="smtp.example.com"
-SMTP_PORT="587"
-SMTP_USER="user@example.com"
-SMTP_PASSWORD="your-smtp-password"
+SMTP_HOST="[VOTRE_SERVEUR_SMTP]"
+SMTP_PORT="[PORT_SMTP]"
+SMTP_USER="[VOTRE_EMAIL]"
+SMTP_<mot_de_passe>="<mot_de_passe>"
 ```
 
-⚠️ **IMPORTANT** :
+⚠️ **IMPORTANT - SÉCURITÉ** :
 - Ne commitez JAMAIS le fichier `.env` dans Git
 - Utilisez des mots de passe forts et uniques
-- Générez une clé secrète sécurisée pour NEXTAUTH_SECRET
+- Générez une clé secrète sécurisée pour NEXTAUTH_SECRET (utilisez `openssl rand -base64 32`)
 - En production, utilisez des variables d'environnement sécurisées
+- Ne partagez JAMAIS vos clés d'API ou mots de passe
+- Faites des sauvegardes régulières de votre base de données
 
 ### Création de l'Administrateur
 
@@ -569,6 +571,8 @@ npm run create-admin
 - Changez immédiatement le mot de passe par défaut
 - Utilisez une adresse email sécurisée
 - Activez l'authentification à deux facteurs si possible
+- Limitez les tentatives de connexion
+- Surveillez les logs d'accès
 
 ## Développement
 
@@ -619,6 +623,10 @@ npm start
 - Mettez en place une politique de mots de passe forte
 - Limitez les tentatives de connexion
 - Surveillez les logs d'accès
+- Mettez en place des sauvegardes automatiques
+- Utilisez un pare-feu
+- Activez la protection contre les attaques par force brute
+- Mettez en place une surveillance des tentatives de connexion suspectes
 
 ## Support
 
@@ -630,3 +638,33 @@ Pour toute question ou problème :
 ## Licence
 
 [Votre licence]
+
+## Nettoyage des doublons de prêts
+
+Pour garantir qu'il n'existe jamais plus d'un prêt actif/non retourné par item, un script de nettoyage est disponible.
+
+### Utilisation
+
+1. **Exécuter le script** :
+
+```bash
+npx ts-node scripts/cleanup-loan-duplicates.ts
+```
+
+Ou, si vous avez ajouté le script dans le package.json :
+
+```bash
+npm run cleanup:loans
+```
+
+2. **Ce que fait le script** :
+   - Parcourt tous les items.
+   - Trouve les prêts non retournés pour chaque item.
+   - Marque tous les prêts sauf le plus récent comme "RETURNED" (avec la date du jour).
+   - Logue chaque action effectuée.
+
+**Aucune suppression n'est faite, l'historique est préservé.**
+
+### Automatisation (optionnel)
+
+Pour automatiser ce nettoyage, vous pouvez planifier l'exécution du script via un cron ou un outil d'intégration continue (CI/CD).
