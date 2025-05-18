@@ -284,16 +284,6 @@ sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-## Étape 9 : Configuration HTTPS avec Let's Encrypt
-
-```bash
-# Installation de Certbot
-sudo apt install -y certbot python3-certbot-nginx
-
-# Obtention du certificat SSL
-sudo certbot --nginx -d votre-domaine.com
-```
-
 ## Maintenance et mises à jour
 
 ### Mise à jour de l'application

@@ -21,7 +21,7 @@ npm run prisma:generate
 echo "🔄 Application des migrations..."
 npm run prisma:deploy
 
-# Construire l'application
+# Construction de l'application
 echo "🏗️ Construction de l'application..."
 npm run build:prod
 
@@ -29,4 +29,6 @@ npm run build:prod
 echo "🚀 Démarrage de l'application..."
 npm run start:prod
 
-echo "✅ Déploiement terminé avec succès!" 
+echo "✅ Déploiement terminé avec succès!"
+
+# Note : La gestion SSL/HTTPS doit être faite via Nginx Proxy Manager ou un reverse proxy externe. 
