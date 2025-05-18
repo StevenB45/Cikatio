@@ -27,7 +27,7 @@ npm run build:prod
 
 # Démarrer l'application
 echo "🚀 Démarrage de l'application..."
-npm run start:prod
+NODE_ENV=production next start -p 3001
 
 echo "✅ Déploiement terminé avec succès!"
 
