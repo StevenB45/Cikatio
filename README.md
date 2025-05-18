@@ -73,8 +73,6 @@ Le script s'occupe de :
 - Configuration de Node.js
 - Configuration de la base de données PostgreSQL
 - Installation et configuration de l'application
-- Configuration du serveur web (Nginx)
-- Configuration de HTTPS avec Let's Encrypt
 
 ## ⚠️ Résolution des problèmes courants
 
