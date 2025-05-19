@@ -40,7 +40,7 @@ check_prerequisites() {
 install_system_dependencies() {
     print_message "Installation des dépendances système..."
     apt update && apt upgrade -y
-    apt install -y git curl build-essential postgresql postgresql-contrib
+    apt install -y git curl build-essential postgresql postgresql-contrib libpq-dev python3
 }
 
 # Installation de Node.js
