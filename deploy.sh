@@ -40,7 +40,7 @@ check_prerequisites() {
 install_system_dependencies() {
     print_message "Installation des dépendances système..."
     apt update && apt upgrade -y
-    apt install -y git curl build-essential postgresql postgresql-contrib nginx
+    apt install -y git curl build-essential postgresql postgresql-contrib
 }
 
 # Installation de Node.js
@@ -118,40 +118,6 @@ setup_pm2() {
     pm2 save
 }
 
-# Configuration de Nginx
-setup_nginx() {
-    print_message "Configuration de Nginx..."
-    
-    # Créer la configuration Nginx
-    cat > /etc/nginx/sites-available/cikatio << EOL
-server {
-    listen 80;
-    server_name ${APP_URL#https://};
-
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
-    }
-}
-EOL
-    
-    # Activer le site
-    ln -s /etc/nginx/sites-available/cikatio /etc/nginx/sites-enabled/
-    nginx -t
-    systemctl restart nginx
-}
-
-# Configuration de HTTPS
-setup_https() {
-    print_message "Configuration de HTTPS..."
-    apt install -y certbot python3-certbot-nginx
-    certbot --nginx -d ${APP_URL#https://}
-}
-
 # Fonction principale
 main() {
     print_message "Début du déploiement de Cikatio..."
@@ -162,8 +128,6 @@ main() {
     setup_postgresql
     setup_application
     setup_pm2
-    setup_nginx
-    setup_https
     
     print_message "Déploiement terminé avec succès !"
     print_message "Votre application est accessible à l'adresse : $APP_URL"
