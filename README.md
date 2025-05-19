@@ -77,7 +77,7 @@ Le script s'occupe de :
 ## ⚠️ Résolution des problèmes courants
 
 ### Erreurs webpack lors du build
-Si vous rencontrez des erreurs liées à webpack (comme des problèmes avec jspdf, xlsx, etc.), exécutez :
+Si vous rencontrez des erreurs liées à webpack (comme des problèmes avec jspdf, etc.), exécutez :
 ```bash
 rm -rf .next
 rm -rf node_modules/.cache

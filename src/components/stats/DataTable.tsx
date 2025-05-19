@@ -20,7 +20,7 @@ import {
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import SearchIcon from '@mui/icons-material/Search';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 interface Column {
   id: string;
@@ -72,25 +72,35 @@ const DataTable: React.FC<DataTableProps> = ({
   });
 
   // Fonction d'export en Excel
-  const handleExport = () => {
-    const exportData = [
-      columns.map(col => col.label),
-      ...filteredData.map(row => 
+  const handleExport = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Données');
+
+    // Ajouter les en-têtes
+    worksheet.addRow(columns.map(col => col.label));
+
+    // Ajouter les données
+    filteredData.forEach(row => {
+      worksheet.addRow(
         columns.map(col => {
           const value = row[col.id];
           if (React.isValidElement(value)) {
-            // Si c'est un composant React, on récupère son texte ou une valeur par défaut
             return value.props.children || value.props.label || '';
           }
           return value;
         })
-      )
-    ];
-    
-    const ws = XLSX.utils.aoa_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Données');
-    XLSX.writeFile(wb, `${filename}.xlsx`);
+      );
+    });
+
+    // Générer le fichier Excel
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filename}.xlsx`;
+    link.click();
+    window.URL.revokeObjectURL(url);
   };
 
   return (
