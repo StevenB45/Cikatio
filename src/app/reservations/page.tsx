@@ -34,6 +34,7 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material';
 import { CommonDialog, useNotification } from '@/components/common';
+import frLocale from '@fullcalendar/core/locales/fr';
 
 export default function ReservationsPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -427,6 +428,8 @@ export default function ReservationsPage() {
       const resStart = new Date(reservation.startDate);
       const resEnd = new Date(reservation.endDate);
       
+      if (!editDates.start || !editDates.end) return false;
+      
       return (
         (editDates.start >= resStart && editDates.start < resEnd) ||
         (editDates.end > resStart && editDates.end <= resEnd) ||
@@ -597,6 +600,7 @@ export default function ReservationsPage() {
               plugins={[dayGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
               locale="fr"
+              locales={[frLocale]}
               selectable={true}
               select={handleDateSelect}
               events={calendarEvents}
@@ -605,14 +609,18 @@ export default function ReservationsPage() {
                 center: 'title',
                 right: 'dayGridMonth,dayGridWeek'
               }}
+              buttonText={{
+                today: 'Aujourd\'hui',
+                month: 'Mois',
+                week: 'Semaine'
+              }}
               height="auto"
               eventTimeFormat={{
                 hour: '2-digit',
                 minute: '2-digit',
                 omitZeroMinute: true,
                 meridiem: false,
-                hour12: false,
-                display: 'none'
+                hour12: false
               }}
               eventClick={handleEventClick}
             />
@@ -842,7 +850,7 @@ export default function ReservationsPage() {
           open={isReservationMoveDialogOpen}
           onClose={() => setIsReservationMoveDialogOpen(false)}
           title="Action sur la date sélectionnée"
-          confirmLabel={null}
+          confirmLabel=""
           cancelLabel="Annuler"
           maxWidth="sm"
           ariaLabelledby="reservation-move-dialog-title"
