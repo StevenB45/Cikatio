@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import ExcelJS from 'exceljs';
-import { DatePeriod, Item, Loan, User } from '@/types';
+import { DatePeriod, Item, Loan, User, LoanContext } from '@/types';
 import { GlobalStats } from './useGlobalStats';
-import { getDateRangeForPeriod, formatDateToLocal } from '@/lib/utils/dateUtils';
+import { getDateRangeForPeriod, formatDateToLocal, getPeriodLabel } from '@/lib/utils/dateUtils';
+import { contextLabels } from '@/lib/pdfUtils';
 
 export interface ExportConfig {
   filename: string;
@@ -120,7 +121,8 @@ export const useExcelExport = (
       worksheet.addRow([]);
 
       // Période analysée
-      const periodRow = worksheet.addRow(['Période analysée', config.period]);
+      const periodLabelFr = getPeriodLabel(config.period, config.customStart, config.customEnd);
+      const periodRow = worksheet.addRow(['Période analysée', periodLabelFr]);
       periodRow.font = { bold: true };
       worksheet.mergeCells('A15:B15');
       worksheet.addRow([]);
@@ -181,7 +183,7 @@ export const useExcelExport = (
           item?.name || '',
           item?.category === 'BOOK' ? 'Livre' : 'Matériel',
           item?.serviceCategory || 'Non défini',
-          loan.contexts?.join(', ') || 'Non défini',
+          Array.isArray(loan.contexts) && loan.contexts.length > 0 ? (loan.contexts as LoanContext[]).map((c) => contextLabels[c] || c).join(', ') : 'Non défini',
           user ? `${user.firstName} ${user.lastName}` : '',
           user?.email || ''
         ]);

@@ -17,7 +17,7 @@ interface Item {
 }
 
 // Labels en français pour les contextes
-const contextLabels: Record<LoanContext, string> = {
+export const contextLabels: Record<LoanContext, string> = {
   CONFERENCE_FINANCEURS: "Conférence des financeurs",
   APPUIS_SPECIFIQUES: "Appuis spécifiques",
   PLATEFORME_AGEFIPH: "Plateforme Agefiph",
