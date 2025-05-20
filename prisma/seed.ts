@@ -14,7 +14,7 @@ async function main() {
         email: 'admin@cikatio.fr',
         isAdmin: true,
         hashedPassword,
-        updatedAt: new Date() // Ajout du champ obligatoire updatedAt
+        updatedAt: new Date()
       }
     });
 

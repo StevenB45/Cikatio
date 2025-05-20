@@ -243,6 +243,7 @@ export async function PUT(
         data: {
           itemId: existingReservation.itemId,
           userId: userIdForHistory,
+          performedById: modifiedById,
           action: 'MODIFY',
           date: new Date(),
           comment: comment

@@ -154,6 +154,7 @@ export async function POST(request: Request) {
       data: {
         itemId,
         userId,
+        performedById: body.performedById || userId,
         action: 'RESERVE',
         date: new Date(),
         comment: `Nouvelle réservation - ${itemName} réservé du ${startDateStr} au ${endDateStr} pour ${userName}`

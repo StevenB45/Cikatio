@@ -1,9 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
-  //  output   = "./node_modules/@prisma/client"
 }
 
 datasource db {
@@ -11,89 +7,154 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Modèle pour les utilisateurs (normaux et administrateurs)
 model User {
-  id        String   @id @default(cuid())
-  firstName String
-  lastName  String
-  email     String   @unique
-  phone     String?
-  address   String?
-  isAdmin   Boolean  @default(false) // Ou votre champ 'role' si différent
-  hashedPassword String? // Ajout du champ hashedPassword
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Nouveaux champs ajoutés
-  dateOfBirth    DateTime? // Stocker la date de naissance
-  departmentCode String? // Stocker le code département (ex: "75")
-  departmentName String? // Stocker le nom du département (ex: "Paris")
-
-  // Relations
-  loans              Loan[]
-  passwordTokens     PasswordToken[]
-  // Relation vers les items réservés PAR cet utilisateur
-  reservations       Item[]               @relation("ItemReservedBy") // Utilise le nom de relation défini dans Item
-  reservationHistory ReservationHistory[]
-  userReservations   Reservation[]        // Ajout de la relation manquante
-  actionHistory      UserActionHistory[]  @relation("UserActionTarget")
-  actionsPerformed   UserActionHistory[]  @relation("UserActionPerformer")
-  LoanHistory        LoanHistory[]
+  id                          String               @id @default(cuid())
+  firstName                   String
+  lastName                    String
+  email                       String               @unique
+  phone                       String?
+  address                     String?
+  isAdmin                     Boolean              @default(false)
+  hashedPassword              String?
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
+  dateOfBirth                 DateTime?
+  departmentCode              String?
+  departmentName              String?
+  reservations                Item[]               @relation("ItemReservedBy")
+  loans                       Loan[]
+  loanHistoryPerformed        LoanHistory[]        @relation("LoanHistoryPerformer")
+  loanHistory                 LoanHistory[]        @relation("LoanHistoryUser")
+  passwordTokens              PasswordToken[]
+  userReservations            Reservation[]
+  reservationHistoryPerformed ReservationHistory[] @relation("ReservationHistoryPerformer")
+  reservationHistory          ReservationHistory[] @relation("ReservationHistoryUser")
+  actionsPerformed            UserActionHistory[]  @relation("UserActionPerformer")
+  actionHistory               UserActionHistory[]  @relation("UserActionTarget")
 }
 
-// Définition manquante du modèle PasswordToken
 model PasswordToken {
   id        String   @id @default(cuid())
   token     String   @unique
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Item {
+  id                 String               @id @default(uuid())
+  customId           String               @unique
+  name               String
+  description        String?
+  category           ItemType
+  serviceCategory    ServiceCategory
+  available          Boolean              @default(true)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  author             String?
+  isbn               String?
+  publisher          String?
+  yearPublished      Int?
+  serialNumber       String?
+  brand              String?
+  model              String?
+  coverImageUrl      String?
+  reservationStatus  ReservationStatus    @default(AVAILABLE)
+  reservedById       String?
+  reservedAt         DateTime?
+  reservedBy         User?                @relation("ItemReservedBy", fields: [reservedById], references: [id])
+  loans              Loan[]
+  reservations       Reservation[]
+  reservationHistory ReservationHistory[]
+
+  @@index([customId])
+  @@index([name])
+}
+
+model Loan {
+  id          String        @id @default(uuid())
+  itemId      String?
+  borrowerId  String
+  borrowedAt  DateTime      @default(now())
+  dueAt       DateTime
+  returnedAt  DateTime?
+  status      LoanStatus    @default(ACTIVE)
+  notes       String?
+  contexts    LoanContext[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  borrower    User          @relation(fields: [borrowerId], references: [id])
+  item        Item?         @relation(fields: [itemId], references: [id])
+  LoanHistory LoanHistory[]
+
+  @@index([borrowerId])
+  @@index([itemId])
+  @@index([status])
+}
+
+model ReservationHistory {
+  id            String   @id @default(uuid())
+  itemId        String
+  userId        String
+  action        String
+  date          DateTime @default(now())
+  comment       String?
+  performedById String?
+  item          Item     @relation(fields: [itemId], references: [id])
+  performedBy   User?    @relation("ReservationHistoryPerformer", fields: [performedById], references: [id])
+  user          User     @relation("ReservationHistoryUser", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([performedById])
+}
+
+model UserActionHistory {
+  id           String   @id @default(uuid())
+  targetUserId String?
+  action       String
+  date         DateTime @default(now())
+  performerId  String?
+  comment      String?
+  performer    User?    @relation("UserActionPerformer", fields: [performerId], references: [id])
+  targetUser   User?    @relation("UserActionTarget", fields: [targetUserId], references: [id])
+}
+
+model LoanHistory {
+  id            String     @id @default(uuid())
+  loanId        String
+  status        LoanStatus
+  date          DateTime   @default(now())
+  userId        String?
+  comment       String?
+  performedById String?
+  loan          Loan       @relation(fields: [loanId], references: [id])
+  performedBy   User?      @relation("LoanHistoryPerformer", fields: [performedById], references: [id])
+  user          User?      @relation("LoanHistoryUser", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([performedById])
+}
+
+model Reservation {
+  id        String            @id @default(uuid())
+  itemId    String
+  userId    String
+  startDate DateTime
+  endDate   DateTime
+  status    ReservationStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  item      Item              @relation(fields: [itemId], references: [id])
+  user      User              @relation(fields: [userId], references: [id])
+
+  @@index([itemId])
+  @@index([userId])
 }
 
 enum Role {
   USER
   ADMIN
-}
-
-// Modèle pour les items (livres et matériel)
-model Item {
-  id          String   @id @default(uuid())
-  customId    String   @unique // identifiant unique entré manuellement
-  name        String
-  description String?
-  category    ItemType
-  serviceCategory ServiceCategory // Suppression du point d'interrogation pour le rendre obligatoire
-  available   Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  loans       Loan[]
-
-  // Champs spécifiques aux livres
-  author        String?
-  isbn          String?
-  publisher     String?
-  yearPublished Int?
-
-  // Champs spécifiques au matériel
-  serialNumber  String?
-  brand         String?
-  model         String?
-  coverImageUrl String?
-
-  reservationStatus ReservationStatus @default(AVAILABLE)
-
-  // Ajout pour la réservation
-  // Relation vers l'utilisateur QUI A réservé cet item
-  reservedBy   User?     @relation("ItemReservedBy", fields: [reservedById], references: [id]) // Utilise le nom de relation
-  reservedById String?
-  reservedAt   DateTime?
-
-  reservationHistory ReservationHistory[]
-  reservations     Reservation[]
-
-  @@index([customId])
-  @@index([name])
 }
 
 enum ItemType {
@@ -110,13 +171,12 @@ enum ReservationStatus {
   OUT_OF_ORDER
 }
 
-// AJOUTER CETTE NOUVELLE ENUMERATION
 enum ServiceCategory {
   RUNE
   SAVS
   CICAT
   PNT
-  LOGEMENT_INCLUSIF // Les valeurs d'enum ne peuvent pas contenir d'espaces
+  LOGEMENT_INCLUSIF
 }
 
 enum LoanContext {
@@ -131,85 +191,10 @@ enum LoanContext {
   LOGEMENT_INCLUSIF
 }
 
-// Modèle pour les prêts
-model Loan {
-  id          String        @id @default(uuid())
-  item        Item?         @relation(fields: [itemId], references: [id])
-  itemId      String?
-  borrower    User          @relation(fields: [borrowerId], references: [id])
-  borrowerId  String
-  borrowedAt  DateTime      @default(now())
-  dueAt       DateTime
-  returnedAt  DateTime?
-  status      LoanStatus    @default(ACTIVE)
-  notes       String?
-  contexts    LoanContext[] // Ajout des contextes multiples
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  LoanHistory LoanHistory[]
-
-  @@index([borrowerId])
-  @@index([itemId])
-  @@index([status])
-}
-
 enum LoanStatus {
   ACTIVE
   OVERDUE
   RETURNED
   OUT_OF_ORDER
-  SCHEDULED  // Ajout du statut pour les prêts programmés dans le futur
-}
-
-// Modèle pour l'historique des réservations
-model ReservationHistory {
-  id      String   @id @default(uuid())
-  item    Item     @relation(fields: [itemId], references: [id])
-  itemId  String
-  user    User     @relation(fields: [userId], references: [id])
-  userId  String
-  action  String // 'RESERVE' ou 'CANCEL'
-  date    DateTime @default(now())
-  comment String? // optionnel
-}
-
-// Modèle pour l'historique des actions des utilisateurs
-model UserActionHistory {
-  id           String   @id @default(uuid())
-  // Relation vers l'utilisateur cible de l'action (rendu optionnel pour la migration)
-  targetUser   User?    @relation("UserActionTarget", fields: [targetUserId], references: [id])
-  targetUserId String?
-  action       String // Exemple: 'CREATE', 'UPDATE', 'DELETE', 'ROLE_CHANGE'
-  date         DateTime @default(now())
-  // Relation vers l'utilisateur (souvent admin) qui a effectué l'action
-  performer    User?    @relation("UserActionPerformer", fields: [performerId], references: [id])
-  performerId  String?
-  comment      String? // Détail ou contexte de l'action
-}
-
-model LoanHistory {
-  id      String     @id @default(uuid())
-  loan    Loan       @relation(fields: [loanId], references: [id])
-  loanId  String
-  status  LoanStatus
-  date    DateTime   @default(now())
-  user    User?      @relation(fields: [userId], references: [id])
-  userId  String?
-  comment String?
-}
-
-model Reservation {
-  id        String   @id @default(uuid())
-  item      Item     @relation(fields: [itemId], references: [id])
-  itemId    String
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  startDate DateTime
-  endDate   DateTime
-  status    ReservationStatus @default(PENDING)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([itemId])
-  @@index([userId])
+  SCHEDULED
 }

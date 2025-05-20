@@ -422,6 +422,7 @@ export async function POST(request: Request) {
           status: loan.status,
           date: loan.borrowedAt,
           userId: loan.borrowerId,
+          performedById: data.performedById || loan.borrowerId,
           comment: `Création du prêt${loan.status === 'SCHEDULED' ? ' programmé' : ''}`,
         }
       });

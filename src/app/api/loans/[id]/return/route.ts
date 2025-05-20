@@ -60,7 +60,8 @@ export async function POST(
             status: 'RETURNED',
             date: updatedLoan.returnedAt || new Date(),
             userId: updatedLoan.borrowerId,
-            comment: `Retour de l'item`
+            performedById: data.performedById || updatedLoan.borrowerId,
+            comment: 'Retour du prêt'
           }
         });
         console.log('Loan history created successfully');
