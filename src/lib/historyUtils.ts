@@ -27,6 +27,8 @@ export interface HistoryItem {
   statusIcon?: React.ReactElement;
   errorMessage?: string;
   performedBy?: { firstName: string; lastName: string };
+  borrowedAt?: string;  // Date d'emprunt au format français DD/MM/YYYY
+  dueAt?: string;       // Date de retour prévue au format français DD/MM/YYYY
 }
 
 // Mapping des statuts de prêt vers des libellés d'actions cohérents 
@@ -96,23 +98,53 @@ export async function fetchItemHistory(itemId: string): Promise<HistoryItem[]> {
     // car elles seront générées à partir de loanStatusHistory pour éviter les doublons
     const loansHistory: HistoryItem[] = [];
     
-    // Transformer les réservations actives en entrées d'historique
-    const reservationsHistory = reservations.map((r: any): HistoryItem => ({
-      action: 'Réservation active',
-      itemName: r.item?.name || 'Item inconnu',
-      user: formatUserName(r.user),
-      userId: r.userId,
-      itemId: r.itemId,
-      date: formatDate(r.createdAt || r.startDate),
-      startDate: formatDate(r.startDate),
-      endDate: formatDate(r.endDate),
-      status: getTranslatedStatus(r.status),
-      rawStatus: r.status,
-      comment: `Réservation du ${formatDate(r.startDate)} au ${formatDate(r.endDate)}`,
-      type: 'reservation',
-      id: r.id,
-      returnedAt: null
-    }));
+    // Transformer uniquement les véritables réservations (pas les emprunts) en entrées d'historique
+    const reservationsHistory = reservations
+      .filter((r: any) => {
+        // Vérification encore plus stricte pour éviter d'afficher les prêts comme des réservations :
+        // 1. Statut doit être CONFIRMED (réservation confirmée)
+        // 2. L'item ne doit pas être emprunté (statut BORROWED)
+        // 3. Ne pas inclure les réservations qui ont un prêt actif associé
+        // 4. Ne pas inclure les réservations qui sont liées à un prêt (même utilisateur, même item)
+        
+        const hasActiveLoan = loans.some((l: any) => 
+          l.itemId === r.itemId && 
+          l.borrowerId === r.userId && 
+          ['ACTIVE', 'OVERDUE', 'SCHEDULED'].includes(l.status)
+        );
+        
+        // Vérifier si cette réservation correspond à un prêt (même utilisateur, même item)
+        const matchesLoan = loans.some((l: any) => 
+          l.itemId === r.itemId && 
+          l.borrowerId === r.userId
+        );
+        
+        return r.status === 'CONFIRMED' && 
+               (!r.item || r.item.reservationStatus !== 'BORROWED') && 
+               !hasActiveLoan &&
+               !matchesLoan;
+      })
+      .map((r: any): HistoryItem => ({
+        action: 'Réservation active',
+        itemName: r.item?.name || 'Item inconnu',
+        user: formatUserName(r.user),
+        userId: r.userId,
+        itemId: r.itemId,
+        date: formatDate(r.createdAt || r.startDate),
+        startDate: formatDate(r.startDate),
+        endDate: formatDate(r.endDate),
+        status: getTranslatedStatus(r.status),
+        rawStatus: r.status,
+        comment: `Réservation du ${formatDate(r.startDate)} au ${formatDate(r.endDate)}`,
+        type: 'reservation',
+        id: r.id,
+        returnedAt: null,
+        // Ajouter l'information sur qui a effectué l'action
+        performedBy: r.performedBy ? {
+          firstName: r.performedBy.firstName || '',
+          lastName: r.performedBy.lastName || ''
+        } : undefined
+      }));
 
     // Transformer l'historique des actions de réservation
     const reservationActionsHistory = reservationHistory.map((rh: any): HistoryItem => {
@@ -130,7 +162,12 @@ export async function fetchItemHistory(itemId: string): Promise<HistoryItem[]> {
         comment: rh.comment || '',
         type: 'reservation_action',
         id: rh.id,
-        returnedAt: null
+        returnedAt: null,
+        // Ajouter l'information sur qui a effectué l'action
+        performedBy: rh.performedBy ? {
+          firstName: rh.performedBy.firstName || '',
+          lastName: rh.performedBy.lastName || ''
+        } : undefined
       };
     });
 
@@ -157,10 +194,12 @@ export async function fetchItemHistory(itemId: string): Promise<HistoryItem[]> {
         comment = 'Création du prêt';
       }
 
+      // Référence au prêt complet si disponible
+      const loan = lsh.loan || {};
+
       // Ajouter l'information sur l'administrateur si disponible
-      if (lsh.performedBy) {
-        comment += ` par ${lsh.performedBy.firstName} ${lsh.performedBy.lastName}`;
-      }
+      // Note: Nous ne modifions plus le commentaire ici car l'administrateur est affiché séparément dans l'interface
+      // L'info performedBy est préservée et sera affichée dans une colonne/section dédiée
 
       return {
         action,
@@ -175,7 +214,13 @@ export async function fetchItemHistory(itemId: string): Promise<HistoryItem[]> {
         type: 'loan_status_change',
         id: lsh.id,
         returnedAt: lsh.status === 'RETURNED' ? formatDate(lsh.date) : null,
-        performedBy: lsh.performedBy ? `${lsh.performedBy.firstName} ${lsh.performedBy.lastName}` : null
+        // Ajouter les dates de prêt et de retour prévu si disponibles
+        borrowedAt: loan.borrowedAt ? formatDate(loan.borrowedAt) : undefined,
+        dueAt: loan.dueAt ? formatDate(loan.dueAt) : undefined,
+        performedBy: lsh.performedBy ? {
+          firstName: lsh.performedBy.firstName || '',
+          lastName: lsh.performedBy.lastName || ''
+        } : undefined
       };
     });
     
@@ -317,6 +362,7 @@ export async function fetchUserHistory(userId: string): Promise<HistoryItem[]> {
       itemId: '',
       date: '-',
       status: 'Erreur de récupération',
+      rawStatus: 'ERROR', // Ajouter la propriété manquante
       statusLabel: 'Erreur',
       statusColor: 'error',
       statusIcon: undefined,

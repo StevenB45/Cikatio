@@ -516,7 +516,8 @@ export default function LoansPage() {
       // Traitement normal pour les prêts réels
       const response = await fetch(`/api/loans/${currentLoan.id}/return`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ performedById: session?.user?.id }) // Ajouter l'ID de l'utilisateur qui effectue l'action
       });
       
       console.log(`Statut de la réponse : ${response.status}`);

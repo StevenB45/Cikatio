@@ -28,15 +28,19 @@ export interface HistoryRow {
   rawStatus?: string; // Ajout du champ rawStatus qui contient la valeur brute du statut
   type?: string; // Type d'événement (loan, reservation, loan_status_change, etc.)
   comment?: string; // Commentaire associé à l'événement
+  performedById?: string; // ID de l'utilisateur qui a effectué l'action
+  performedBy?: { firstName: string; lastName: string } | string; // Info sur l'utilisateur qui a effectué l'action
+  borrowedAt?: string; // Date d'emprunt au format français DD/MM/YYYY
+  dueAt?: string; // Date de retour prévue au format français DD/MM/YYYY
 }
 
 interface HistoryTableProps {
   rows: HistoryRow[];
-  columns?: Array<'action'|'user'|'itemName'|'date'|'endDate'|'dueDate'|'status'|'returnedAt'>;
+  columns?: Array<'action'|'user'|'itemName'|'date'|'endDate'|'dueDate'|'status'|'returnedAt'|'performedBy'>;
   emptyText?: string;
 }
 
-export const HistoryTable: React.FC<HistoryTableProps> = ({ rows, columns = ['action','user','date','status','returnedAt'], emptyText }) => {
+export const HistoryTable: React.FC<HistoryTableProps> = ({ rows, columns = ['action','user','date','status','returnedAt','performedBy'], emptyText }) => {
   const [sortBy, setSortBy] = useState<string>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -56,10 +60,16 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ rows, columns = ['ac
   // Fonction pour obtenir une icône en fonction de l'action
   const getActionIcon = (row: HistoryRow) => {
     const action = row.action?.toLowerCase() || '';
+    const status = row.rawStatus?.toLowerCase() || row.status?.toLowerCase() || '';
     
     // Détecter les retours de prêts
-    if (action.includes('retour') || (row.status === 'RETURNED')) {
+    if (action.includes('retour') || (status === 'returned')) {
       return <ReturnIcon color="success" />;
+    }
+    
+    // Détecter les prêts
+    if (action.includes('emprunt') || status === 'active' || status === 'overdue') {
+      return <HistoryIcon color="warning" />;
     }
     
     // Détecter les réservations
@@ -68,7 +78,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ rows, columns = ['ac
     }
     
     // Pour les prêts programmés
-    if (action.includes('programmé') || row.status === 'SCHEDULED') {
+    if (action.includes('programmé') || status === 'scheduled') {
       return <CalendarIcon color="info" />;
     }
     
@@ -142,6 +152,11 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ rows, columns = ['ac
                 Retour {sortBy === 'returnedAt' && (sortDirection === 'asc' ? '▲' : '▼')}
               </TableCell>
             )}
+            {columns.includes('performedBy') && (
+              <TableCell onClick={() => handleSort('performedBy')} style={{ cursor: 'pointer' }}>
+                Effectué par {sortBy === 'performedBy' && (sortDirection === 'asc' ? '▲' : '▼')}
+              </TableCell>
+            )}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -190,6 +205,19 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ rows, columns = ['ac
                       sx={{ minWidth: 'auto', maxWidth: 'none', width: 'auto' }}
                     />
                   )}
+                </TableCell>
+              )}
+              {columns.includes('performedBy') && (
+                <TableCell>
+                  {(() => {
+                    if (typeof row.performedBy === 'object' && row.performedBy) {
+                      return `${row.performedBy.firstName} ${row.performedBy.lastName}`;
+                    } else if (typeof row.performedBy === 'string') {
+                      return row.performedBy;
+                    } else {
+                      return '-';
+                    }
+                  })()}
                 </TableCell>
               )}
             </TableRow>

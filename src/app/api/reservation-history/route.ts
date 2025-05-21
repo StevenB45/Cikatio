@@ -27,6 +27,14 @@ export async function GET(request: Request) {
             lastName: true,
             email: true
           }
+        },
+        performedBy: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true
+          }
         }
       },
       orderBy: { date: 'desc' }

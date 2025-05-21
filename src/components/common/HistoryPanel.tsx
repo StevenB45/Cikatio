@@ -26,13 +26,15 @@ interface HistoryPanelProps {
   type: 'item' | 'user';
   id?: string;
   maxHeight?: number | string;
+  showPerformedBy?: boolean; // Paramètre pour afficher qui a effectué l'action
 }
 
 const HistoryPanel: React.FC<HistoryPanelProps> = ({ 
   title = 'Historique', 
   type, 
   id, 
-  maxHeight = 400 
+  maxHeight = 400,
+  showPerformedBy = true // Activer par défaut l'affichage de l'administrateur qui a effectué l'action
 }) => {
   const { itemHistory, userHistory, isLoading, loadItemHistory, loadUserHistory } = useHistory();
   
@@ -87,6 +89,23 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({
     // Ajouter la date de retour si elle existe et n'est pas déjà mentionnée
     if (item.returnedAt && !item.comment?.includes(item.returnedAt) && item.action === 'Retour') {
       parts.push(`Retourné le ${item.returnedAt}`);
+    }
+    
+    // Ajouter l'information sur qui a effectué l'action si elle existe et est demandée
+    if (showPerformedBy && item.performedBy && typeof item.performedBy === 'object') {
+      const name = `${item.performedBy.firstName} ${item.performedBy.lastName}`.trim();
+      if (name && !item.comment?.includes(name)) {
+        // Distinction entre emprunt et réservation pour l'affichage
+        if (item.action === 'Emprunt' || item.rawStatus === 'ACTIVE') {
+          parts.push(`Prêt enregistré par ${name}`);
+        } else if (item.action === 'Retour' || item.rawStatus === 'RETURNED') {
+          parts.push(`Retour enregistré par ${name}`);
+        } else if (item.action.includes('Réservation')) {
+          parts.push(`Réservation enregistrée par ${name}`);
+        } else {
+          parts.push(`Effectué par ${name}`);
+        }
+      }
     }
     
     // Ajouter le commentaire uniquement s'il apporte une information supplémentaire

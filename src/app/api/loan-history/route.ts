@@ -52,7 +52,8 @@ export async function GET(request: Request) {
             borrower: true
           }
         },
-        user: true
+        user: true,
+        performedBy: true
       },
       orderBy: { date: 'desc' }
     });
@@ -103,6 +104,26 @@ export async function GET(request: Request) {
         `${relevantUser.firstName || ''} ${relevantUser.lastName || ''}`.trim() : 
         'Utilisateur inconnu';
       
+      // Récupération de l'info sur qui a effectué l'action
+      const performedByUser = lh.performedBy;
+      const performedByName = performedByUser ? 
+        `${performedByUser.firstName || ''} ${performedByUser.lastName || ''}`.trim() : 
+        null;
+        
+      // Améliorer le commentaire avec l'information sur l'administrateur
+      if (performedByName && !comment.includes(performedByName)) {
+        comment = `${comment} (par ${performedByName})`;
+      }
+      
+      // Vérifier si la date est valide
+      let formattedDate = '-';
+      if (lh.date) {
+        const dateObj = new Date(lh.date);
+        if (!isNaN(dateObj.getTime())) {
+          formattedDate = dateObj.toLocaleDateString('fr-FR');
+        }
+      }
+        
       return {
         id: lh.id,
         action: actionLabel,
@@ -111,10 +132,15 @@ export async function GET(request: Request) {
         userId: lh.userId || loanComplete?.borrowerId,
         user: userName,
         userObj: relevantUser,
-        date: lh.date ? new Date(lh.date).toLocaleDateString('fr-FR') : '-',
+        date: formattedDate,
         status: lh.status,
         comment: comment,
-        loanId: lh.loanId
+        loanId: lh.loanId,
+        performedById: lh.performedById,
+        performedBy: performedByUser ? {
+          firstName: performedByUser.firstName || '',
+          lastName: performedByUser.lastName || ''
+        } : null
       };
     });
     

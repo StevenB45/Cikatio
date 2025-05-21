@@ -163,6 +163,7 @@ const ProductSheet: React.FC<ProductSheetProps> = ({ open, item, onClose, histor
               id={item.id} 
               title={`Historique de ${item.name}`} 
               maxHeight="100%" 
+              showPerformedBy={true}
             />
           </Box>
         )}
