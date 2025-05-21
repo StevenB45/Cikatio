@@ -85,7 +85,10 @@ export default function ReservationsPage() {
           ? `/api/auth/profile?userId=${storedUserId}` 
           : '/api/auth/profile';
           
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        });
         
         if (response.ok) {
           const userData = await response.json();
@@ -517,11 +520,15 @@ export default function ReservationsPage() {
 
   return (
     <MainLayout>
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h4" sx={{ mb: 3 }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
           Calendrier des Réservations
         </Typography>
-
+        <Typography variant="body1" color="text.secondary">
+          Consultez et gérez les réservations de livres et de matériel.
+        </Typography>
+      </Box>
+      <Box sx={{ p: 3 }}>
         {/* Item Selection - Full Width */}
         <Paper sx={{ p: 2, mb: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>

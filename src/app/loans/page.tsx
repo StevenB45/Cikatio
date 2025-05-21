@@ -27,6 +27,7 @@ import ProductSheet from '@/components/items/ProductSheet';
 import UserForm from '@/components/users/UserForm';
 import { Loan, Item, User, ItemType } from '@/types';
 import { getItemHistory } from '@/lib/getItemHistory';
+import { useSession } from 'next-auth/react';
 
 // Import des hooks personnalisés
 import { 
@@ -56,6 +57,8 @@ import { EditableLoan } from '@/components/loans/LoanForm';
 // Page de gestion des prêts (livres et matériel)
 // Permet la création, le retour, la recherche, le tri et l'affichage détaillé des prêts
 export default function LoansPage() {
+  const { data: session } = useSession();
+
   // Hooks pour gérer les données de l'API
   const { items, setItems, fetchItems: fetchItemsData } = useApiCrud<Item>('/api/items');
   const { items: users, setItems: setUsers, fetchItems: fetchUsersData } = useApiCrud<User>('/api/users');
@@ -126,11 +129,11 @@ export default function LoansPage() {
       if (!matchesSearch) return false;
     }
     // NOUVELLE VÉRIFICATION: Éliminer les prêts virtuels pour les items qui ont déjà un prêt réel
-    if (loan.isVirtual) {
+    if (typeof loan.id === 'string' && loan.id.startsWith('virtual_')) {
       const hasRealLoan = loans.some(otherLoan => 
         otherLoan.itemId === loan.itemId && 
         otherLoan.id !== loan.id && 
-        !otherLoan.isVirtual
+        typeof otherLoan.id === 'string' && !otherLoan.id.startsWith('virtual_')
       );
       if (hasRealLoan) return false;
     }
@@ -359,6 +362,9 @@ export default function LoansPage() {
   
   const { showError } = useNotification();
 
+  // Déplacer la déclaration de currentUser avant handleCreateLoan
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
   // Créer un nouveau prêt
   const handleCreateLoan = useCallback(async (newLoan: EditableLoan) => {
     try {
@@ -389,13 +395,15 @@ export default function LoansPage() {
         : [];
       
       // Préparer les données du prêt
+      console.log('currentUser utilisé pour performedById:', currentUser);
       const formattedLoan = {
         itemId: newLoan.itemId,
         borrowerId: newLoan.borrowerId,
         borrowedAt,
         dueAt,
         notes: newLoan.notes || '',
-        contexts: normalizedContexts
+        contexts: normalizedContexts,
+        performedById: currentUser?.id
       };
       
       console.log('Envoi des données au serveur:', JSON.stringify(formattedLoan, null, 2));
@@ -459,7 +467,7 @@ export default function LoansPage() {
       // Ne pas fermer le dialogue en cas d'erreur
       throw error;
     }
-  }, [setLoans, items, setItems, loanError]);
+  }, [setLoans, items, setItems, loanError, currentUser]);
 
   // Traiter le retour d'un prêt
   const handleProcessReturn = useCallback(async () => {
@@ -472,7 +480,7 @@ export default function LoansPage() {
       console.log(`Tentative de retour du prêt ${currentLoan.id}`);
       
       // Cas spécial pour les prêts virtuels (qui n'existent pas réellement en base)
-      if (currentLoan.id.toString().startsWith('virtual_') && currentLoan.isVirtual) {
+      if (typeof currentLoan.id === 'string' && currentLoan.id.startsWith('virtual_')) {
         console.log('Retour d\'un prêt virtuel détecté');
         
         // Extraire l'ID de l'item à partir de l'ID du prêt virtuel
@@ -575,6 +583,32 @@ export default function LoansPage() {
       default: return 'Filtrer par type';
     }
   }, [itemTypeFilter]);
+
+  useEffect(() => {
+    // Récupérer l'utilisateur courant
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch('/api/auth/profile', {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        if (response.ok) {
+          const user = await response.json();
+          setCurrentUser(user);
+        } else {
+          console.error('Erreur lors de la récupération de l\'utilisateur courant:', await response.text());
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération de l\'utilisateur courant:', error);
+      }
+    };
+
+    if (session) {
+      fetchCurrentUser();
+    }
+  }, [session]);
 
   return (
     <MainLayout>
@@ -749,12 +783,13 @@ export default function LoansPage() {
         open={openLoanDialog}
         onClose={handleCloseLoanDialog}
         onSave={handleCreateLoan}
-        title="Nouveau prêt"
-        initialLoan={{}}
+        onGenerateAgreement={handleShowLoanAgreement}
+        initialLoan={{
+          ...currentLoan,
+          notes: currentLoan.notes || undefined
+        }}
         items={items}
         users={users}
-        submitLabel="Enregistrer le prêt"
-        errorMessage={loanError}
         onAddUser={() => {
           setOpenAddUserDialog(true);
           setNewUserFirstName('');
@@ -764,6 +799,8 @@ export default function LoansPage() {
           setNewUserAddress('');
           setNewUserIsAdmin(false);
         }}
+        currentUser={currentUser || undefined}
+        title={currentLoan.id ? 'Modifier le prêt' : 'Nouveau prêt'}
       />
 
       {/* Dialogue de retour */}

@@ -26,7 +26,7 @@ import {
   Login as LoginIcon,
   AdminPanelSettings as AdminIcon
 } from '@mui/icons-material';
-import axios from 'axios';
+import { signIn } from "next-auth/react";
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 
 export default function LoginPage() {
@@ -44,36 +44,22 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const resp = await axios.post('/api/auth/login', { email, password });
-      if (resp.status === 200 && resp.data) {
-        // Create a clean object with only the necessary data
-        const adminData = {
-          email: resp.data.email || '',
-          role: resp.data.role || 'ADMIN',
-          id: resp.data.id || '',
-          firstName: resp.data.firstName || '',
-          lastName: resp.data.lastName || ''
-        };
-        
-        // Validate the data before storing
-        if (!adminData.email || !adminData.id) {
-          throw new Error('Invalid admin data received');
-        }
-        
-        // Store as properly formatted JSON
-        try {
-          localStorage.setItem('admin', JSON.stringify(adminData));
-          router.push('/dashboard');
-        } catch (storageError) {
-          console.error('Error storing admin data:', storageError);
-          setError('Error storing session data');
-        }
+      const res = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      });
+      
+      if (res?.ok) {
+        // Attendre un court instant pour s'assurer que la session est établie
+        await new Promise(resolve => setTimeout(resolve, 100));
+        window.location.href = "/dashboard";
       } else {
-        setError('Email ou mot de passe incorrect');
+        setError("Email ou mot de passe incorrect");
+        setLoading(false);
       }
     } catch (err: any) {
-      setError(err?.response?.data?.error || 'Erreur lors de la connexion');
-    } finally {
+      setError('Erreur lors de la connexion');
       setLoading(false);
     }
   };

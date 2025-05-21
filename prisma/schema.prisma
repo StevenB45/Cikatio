@@ -23,10 +23,12 @@ model User {
   departmentName              String?
   reservations                Item[]               @relation("ItemReservedBy")
   loans                       Loan[]
+  performedLoans              Loan[]               @relation("LoanPerformer")
   loanHistoryPerformed        LoanHistory[]        @relation("LoanHistoryPerformer")
   loanHistory                 LoanHistory[]        @relation("LoanHistoryUser")
   passwordTokens              PasswordToken[]
   userReservations            Reservation[]
+  performedReservations       Reservation[]        @relation("ReservationPerformer")
   reservationHistoryPerformed ReservationHistory[] @relation("ReservationHistoryPerformer")
   reservationHistory          ReservationHistory[] @relation("ReservationHistoryUser")
   actionsPerformed            UserActionHistory[]  @relation("UserActionPerformer")
@@ -73,24 +75,27 @@ model Item {
 }
 
 model Loan {
-  id          String        @id @default(uuid())
-  itemId      String?
-  borrowerId  String
-  borrowedAt  DateTime      @default(now())
-  dueAt       DateTime
-  returnedAt  DateTime?
-  status      LoanStatus    @default(ACTIVE)
-  notes       String?
-  contexts    LoanContext[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  borrower    User          @relation(fields: [borrowerId], references: [id])
-  item        Item?         @relation(fields: [itemId], references: [id])
-  LoanHistory LoanHistory[]
+  id            String        @id @default(uuid())
+  itemId        String?
+  borrowerId    String
+  borrowedAt    DateTime      @default(now())
+  dueAt         DateTime
+  returnedAt    DateTime?
+  status        LoanStatus    @default(ACTIVE)
+  notes         String?
+  contexts      LoanContext[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  performedById String?
+  borrower      User          @relation(fields: [borrowerId], references: [id])
+  item          Item?         @relation(fields: [itemId], references: [id])
+  performedBy   User?         @relation("LoanPerformer", fields: [performedById], references: [id])
+  LoanHistory   LoanHistory[]
 
   @@index([borrowerId])
   @@index([itemId])
   @@index([status])
+  @@index([performedById])
 }
 
 model ReservationHistory {
@@ -137,19 +142,22 @@ model LoanHistory {
 }
 
 model Reservation {
-  id        String            @id @default(uuid())
-  itemId    String
-  userId    String
-  startDate DateTime
-  endDate   DateTime
-  status    ReservationStatus @default(PENDING)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  item      Item              @relation(fields: [itemId], references: [id])
-  user      User              @relation(fields: [userId], references: [id])
+  id            String            @id @default(uuid())
+  itemId        String
+  userId        String
+  startDate     DateTime
+  endDate       DateTime
+  status        ReservationStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  performedById String?
+  item          Item              @relation(fields: [itemId], references: [id])
+  user          User              @relation(fields: [userId], references: [id])
+  performedBy   User?             @relation("ReservationPerformer", fields: [performedById], references: [id])
 
   @@index([itemId])
   @@index([userId])
+  @@index([performedById])
 }
 
 enum Role {

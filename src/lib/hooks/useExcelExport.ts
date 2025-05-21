@@ -305,4 +305,4 @@ const getReservationStatusLabel = (status: string): string => {
     'EXPIRED': 'Expirée'
   };
   return statusMap[status] || status;
-};
+}; 

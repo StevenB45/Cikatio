@@ -7,9 +7,14 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   const { id } = params;
+  const data = await request.json();
 
   if (!id) {
     return NextResponse.json({ error: 'ID du prêt manquant' }, { status: 400 });
+  }
+
+  if (!data.performedById) {
+    return NextResponse.json({ error: 'ID de l\'administrateur manquant' }, { status: 400 });
   }
 
   console.log(`Handling loan return request for loan ID: ${id}`);
@@ -60,13 +65,24 @@ export async function POST(
             status: 'RETURNED',
             date: updatedLoan.returnedAt || new Date(),
             userId: updatedLoan.borrowerId,
-            performedById: data.performedById || updatedLoan.borrowerId,
-            comment: 'Retour du prêt'
+            performedById: data.performedById,
+            comment: 'Retour du prêt par l\'administrateur'
           }
         });
         console.log('Loan history created successfully');
 
-        // 3. If there's an item, update its status
+        // 3. Create user action history record
+        await tx.userActionHistory.create({
+          data: {
+            targetUserId: updatedLoan.borrowerId,
+            action: 'RETURN_LOAN',
+            performerId: data.performedById,
+            comment: `Retour du prêt pour l'item ${updatedLoan.item?.customId || updatedLoan.itemId}`
+          }
+        });
+        console.log('User action history created successfully');
+
+        // 4. If there's an item, update its status
         if (updatedLoan.itemId) {
           try {
             // NOUVELLE VÉRIFICATION: Vérifier s'il existe des prêts actifs pour cet item

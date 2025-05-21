@@ -2,29 +2,20 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { headers } from 'next/headers';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../authOptions';
 
-// Méthode GET pour récupérer l'utilisateur actuellement connecté
-// Cette version utilise une approche simplifiée où l'ID de l'utilisateur
-// est fourni en tant que paramètre de requête pour les démonstrations
+// Méthode GET pour récupérer l'utilisateur actuellement connecté via NextAuth
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-
-    // Pour la démo, retourner un utilisateur fictif si pas d'ID
-    if (!userId) {
-      return NextResponse.json({
-        id: 'demo-user-id',
-        firstName: 'Utilisateur',
-        lastName: 'Démo',
-        email: 'demo@example.com',
-        isAdmin: true
-      });
+    // Récupérer la session NextAuth
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user || !session.user.id) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
     }
-
-    // Récupérer les informations de l'utilisateur
+    // Récupérer l'utilisateur en base (pour infos à jour)
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: session.user.id },
       select: {
         id: true,
         firstName: true,
@@ -37,14 +28,9 @@ export async function GET(request: Request) {
         departmentName: true,
       }
     });
-
     if (!user) {
-      return NextResponse.json(
-        { error: 'Utilisateur non trouvé' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
     }
-
     return NextResponse.json(user);
   } catch (err) {
     console.error('GET /api/auth/profile error:', err);

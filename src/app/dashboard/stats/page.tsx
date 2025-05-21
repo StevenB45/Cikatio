@@ -19,9 +19,10 @@ import MainLayout from '@/components/layout/MainLayout';
 import PageTitle from '@/components/common/PageTitle';
 import { DatePeriod, Item, Loan, User, ItemType, LoanStatus, LoanContext, ServiceCategory } from '@/types';
 import { LOAN_CONTEXTS, SERVICE_CATEGORIES } from '@/types';
-import { useLoanDurations, useGlobalStats, useLoanFilters, useExcelExport } from '@/lib/hooks';
+import { useLoanDurations, useGlobalStats, useLoanFilters } from '@/lib/hooks';
 import { useReservationFilters } from '@/lib/hooks/useReservationFilters';
 import { getPeriodLabel, formatDateToLocal } from '@/lib/utils/dateUtils';
+import { useExcelExport } from '@/lib/hooks/useExcelExport';
 
 /**
  * Composant pour les filtres de période
@@ -199,8 +200,8 @@ export default function StatsPage() {
         const [itemsData, usersData, loansData, reservationsResponse] = await Promise.all([
           fetch('/api/items').then(res => res.json()),
           fetch('/api/users').then(res => res.json()),
-          fetch('/api/loans').then(res => res.json()),
-          fetch('/api/reservations')
+          fetch('/api/loans?include=borrower,item,performedBy').then(res => res.json()),
+          fetch('/api/reservations?include=user,item,performedBy')
         ]);
 
         if (!reservationsResponse.ok) {
@@ -215,14 +216,20 @@ export default function StatsPage() {
           ...loan,
           borrowedAt: new Date(loan.borrowedAt),
           dueAt: new Date(loan.dueAt),
-          returnedAt: loan.returnedAt ? new Date(loan.returnedAt) : undefined
+          returnedAt: loan.returnedAt ? new Date(loan.returnedAt) : undefined,
+          borrower: loan.borrower,
+          item: loan.item,
+          performedBy: loan.performedBy
         })));
         setReservations(Array.isArray(reservationsData) ? reservationsData.map((reservation: any) => ({
           ...reservation,
           startDate: new Date(reservation.startDate),
           endDate: new Date(reservation.endDate),
           createdAt: new Date(reservation.createdAt),
-          updatedAt: new Date(reservation.updatedAt)
+          updatedAt: new Date(reservation.updatedAt),
+          user: reservation.user,
+          item: reservation.item,
+          performedBy: reservation.performedBy
         })) : []);
       } catch (error) {
         console.error("Erreur lors du chargement des données:", error);
@@ -283,7 +290,7 @@ export default function StatsPage() {
     customEnd
   }), [period, customStart, customEnd]);
 
-  const { isExporting, exportData } = useExcelExport(
+  const { isExporting, error, exportData } = useExcelExport(
     filteredLoans,
     items,
     users,
@@ -305,7 +312,7 @@ export default function StatsPage() {
   }, []);
 
   const handleExport = useCallback(() => {
-    exportData().catch(error => {
+    exportData().catch((error: unknown) => {
       setSnackbarMessage("Erreur lors de l'export Excel");
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
@@ -510,7 +517,7 @@ export default function StatsPage() {
               <Button 
                 variant="contained" 
                 color="primary" 
-                startIcon={isExporting ? <CircularProgress size={20} color="inherit" /> : <DownloadIcon />} 
+                startIcon={<DownloadIcon />} 
                 onClick={handleExport}
                 disabled={loading || isExporting || (filteredLoans.length === 0 && filteredReservations.length === 0)}
               >

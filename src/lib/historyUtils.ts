@@ -26,6 +26,7 @@ export interface HistoryItem {
   statusColor?: string;
   statusIcon?: React.ReactElement;
   errorMessage?: string;
+  performedBy?: { firstName: string; lastName: string };
 }
 
 // Mapping des statuts de prêt vers des libellés d'actions cohérents 
@@ -156,6 +157,11 @@ export async function fetchItemHistory(itemId: string): Promise<HistoryItem[]> {
         comment = 'Création du prêt';
       }
 
+      // Ajouter l'information sur l'administrateur si disponible
+      if (lsh.performedBy) {
+        comment += ` par ${lsh.performedBy.firstName} ${lsh.performedBy.lastName}`;
+      }
+
       return {
         action,
         itemName: lsh.itemName || 'Item inconnu',
@@ -168,7 +174,8 @@ export async function fetchItemHistory(itemId: string): Promise<HistoryItem[]> {
         comment,
         type: 'loan_status_change',
         id: lsh.id,
-        returnedAt: lsh.status === 'RETURNED' ? formatDate(lsh.date) : null
+        returnedAt: lsh.status === 'RETURNED' ? formatDate(lsh.date) : null,
+        performedBy: lsh.performedBy ? `${lsh.performedBy.firstName} ${lsh.performedBy.lastName}` : null
       };
     });
     

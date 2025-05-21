@@ -5,6 +5,13 @@ const prisma = new PrismaClient();
 
 async function main() {
   try {
+    // Supprimer l'utilisateur admin s'il existe déjà
+    await prisma.user.deleteMany({
+      where: {
+        email: 'admin@cikatio.fr'
+      }
+    });
+
     const hashedPassword = await bcrypt.hash('Admin123!', 10);
     
     const adminUser = await prisma.user.create({
@@ -14,6 +21,7 @@ async function main() {
         email: 'admin@cikatio.fr',
         isAdmin: true,
         hashedPassword,
+        createdAt: new Date(),
         updatedAt: new Date()
       }
     });

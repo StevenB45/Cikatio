@@ -53,7 +53,14 @@ export async function GET(request: Request) {
             email: true
           }
         },
-        item: true
+        item: true,
+        performedBy: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true
+          }
+        }
       },
       orderBy: { startDate: 'asc' }
     });

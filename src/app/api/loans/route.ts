@@ -41,7 +41,8 @@ export async function GET(req: Request) {
         where,
         include: { 
           item: true, 
-          borrower: true 
+          borrower: true,
+          performedBy: true
         } 
       });
       console.log(`API GET /loans: ${loans.length} prêts réels récupérés.`);
@@ -191,11 +192,15 @@ export async function POST(request: Request) {
     console.log('API POST /loans: données reçues:', JSON.stringify(data, null, 2));
     
     // Validation des champs requis
-    if (!data.itemId || !data.borrowerId) {
-      console.log('API erreur: itemId ou borrowerId manquant');
+    if (!data.itemId || !data.borrowerId || !data.performedById) {
+      console.log('API erreur: itemId, borrowerId ou performedById manquant');
       return NextResponse.json({ 
-        error: "L'item et l'emprunteur sont requis",
-        details: { itemId: !data.itemId, borrowerId: !data.borrowerId }
+        error: "L'item, l'emprunteur et l'administrateur sont requis",
+        details: { 
+          itemId: !data.itemId, 
+          borrowerId: !data.borrowerId,
+          performedById: !data.performedById
+        }
       }, { status: 400 });
     }
     
@@ -415,18 +420,29 @@ export async function POST(request: Request) {
       });
       console.log('Prêt créé avec succès, ID:', loan.id);
 
-      // Créer l'historique
+      // Créer l'historique avec l'administrateur qui effectue l'action
       await prisma.loanHistory.create({
         data: {
           loanId: loan.id,
           status: loan.status,
           date: loan.borrowedAt,
           userId: loan.borrowerId,
-          performedById: data.performedById || loan.borrowerId,
-          comment: `Création du prêt${loan.status === 'SCHEDULED' ? ' programmé' : ''}`,
+          performedById: data.performedById,
+          comment: `Création du prêt${loan.status === 'SCHEDULED' ? ' programmé' : ''} par l'administrateur`,
         }
       });
       console.log('Historique du prêt créé');
+
+      // Créer un enregistrement dans l'historique des actions utilisateur
+      await prisma.userActionHistory.create({
+        data: {
+          targetUserId: loan.borrowerId,
+          action: 'CREATE_LOAN',
+          performerId: data.performedById,
+          comment: `Création d'un prêt pour l'item ${loan.item?.customId || loan.itemId}`,
+        }
+      });
+      console.log('Historique des actions utilisateur créé');
 
       // Mettre à jour le statut de l'item
       await prisma.item.update({

@@ -1,17 +1,25 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Box, CssBaseline, ThemeProvider, createTheme, CircularProgress, Typography } from '@mui/material';
+import { Box, CircularProgress, ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { useSession } from 'next-auth/react';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import Footer from './Footer';
-import { isAdminAuthenticated } from '@/lib/auth';
-import { HistoryProvider } from '@/lib/context';
-import { NotificationProvider } from '@/components/common/NotificationProvider';
+import { HistoryProvider } from '@/lib/context/HistoryContext';
 
-// Création du thème personnalisé pour l'application
-// Séparé dans une constante pour éviter une recréation à chaque rendu
+// Définir le type de session étendu
+interface ExtendedSession {
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    isAdmin: boolean;
+  };
+}
+
+// Thème personnalisé Material-UI
 const theme = createTheme({
   palette: {
     primary: {
@@ -40,6 +48,13 @@ const theme = createTheme({
       'Arial',
       'sans-serif',
     ].join(','),
+    h4: {
+      color: '#1a1a1a',
+      fontWeight: 600,
+      fontSize: '1.75rem',
+      letterSpacing: '-0.01em',
+      marginBottom: '1rem',
+    },
   },
   shape: {
     borderRadius: 8,
@@ -63,30 +78,12 @@ const theme = createTheme({
   },
 });
 
-// Layout principal de l'application (sidebar, header, contenu, footer)
-// Gère l'authentification administrateur et le thème global
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [isAuthChecked, setIsAuthChecked] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { data: session, status } = useSession() as { data: ExtendedSession | null, status: string };
 
-  useEffect(() => {
-    // Vérification de l'authentification administrateur (redirection si non connecté)
-    const checkAuth = () => {
-      const authenticated = isAdminAuthenticated();
-      setIsAuthenticated(authenticated);
-      setIsAuthChecked(true);
-
-      if (!authenticated) {
-        router.push('/auth/login');
-      }
-    };
-    
-    checkAuth();
-  }, [router]);
-
-  // Afficher un indicateur de chargement tant que la vérification n'est pas terminée
-  if (!isAuthChecked) {
+  // Afficher un indicateur de chargement pendant la vérification de la session
+  if (status === 'loading') {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <CircularProgress />
@@ -94,49 +91,26 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
   }
 
-  // Si l'utilisateur n'est pas authentifié après vérification, ne rien afficher (la redirection est en cours)
-  if (!isAuthenticated) {
+  // Rediriger vers la page de connexion si non authentifié
+  if (status === 'unauthenticated' || !session?.user?.isAdmin) {
+    router.push('/auth/login');
     return null;
   }
 
-  // Structure du layout (Sidebar, Header, contenu principal, footer)
-  // Si authentifié, afficher le layout et les enfants
   return (
     <ThemeProvider theme={theme}>
-      <NotificationProvider>
-        <HistoryProvider>
-          <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-            <CssBaseline />
-            <Sidebar />
-            <Box
-              component="main"
-              sx={{
-                flexGrow: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-              }}
-            >
-              <Header />
-              <Box
-                component="div"
-                sx={{
-                  flexGrow: 1,
-                  padding: 3,
-                  marginTop: '64px',
-                  backgroundColor: (theme) => theme.palette.background.default,
-                  overflow: 'auto',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                {children}
-                <Footer /> 
-              </Box>
+      <CssBaseline />
+      <HistoryProvider>
+        <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+          <Sidebar />
+          <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+            <Header />
+            <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+              {children}
             </Box>
           </Box>
-        </HistoryProvider>
-      </NotificationProvider>
+        </Box>
+      </HistoryProvider>
     </ThemeProvider>
   );
 }

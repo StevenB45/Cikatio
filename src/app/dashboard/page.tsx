@@ -12,6 +12,9 @@ import QuickActions from '@/components/dashboard/QuickActions';
 import StatsOverview from '@/components/dashboard/StatsOverview';
 import RecentLoansList from '@/components/dashboard/RecentLoansList';
 import OverdueItemsList from '@/components/dashboard/OverdueItemsList';
+import { getServerSession } from "next-auth";
+import { authOptions } from "../api/auth/authOptions";
+import { redirect } from "next/navigation";
 
 // Import necessary types and enums from Prisma
 import type { Item, User, Loan } from '@prisma/client'; 
@@ -63,6 +66,11 @@ interface DashboardStatsData {
 }
 
 export default async function Dashboard() {
+  const session = await getServerSession(authOptions);
+  console.log('SESSION DASHBOARD:', session);
+  if (!session || !session.user?.isAdmin) {
+    redirect("/auth/login");
+  }
   // Data Fetching
   const [items, users, loansRaw] = await Promise.all([
     prisma.item.findMany(),

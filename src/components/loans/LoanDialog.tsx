@@ -37,6 +37,7 @@ interface LoanDialogProps {
   isEdit?: boolean;
   onAddUser?: () => void;
   errorMessage?: string | null;
+  currentUser?: User;
 }
 
 // Interface pour les réservations en conflit
@@ -64,7 +65,8 @@ const LoanDialog: React.FC<LoanDialogProps> = ({
   dialogProps,
   isEdit = false,
   onAddUser,
-  errorMessage
+  errorMessage,
+  currentUser
 }) => {
   const router = useRouter();
   
@@ -329,6 +331,7 @@ const LoanDialog: React.FC<LoanDialogProps> = ({
           onAddUser={onAddUser}
           unavailableItems={unavailableItems}
           conflictingReservations={conflictingReservations}
+          currentUser={currentUser}
         />
       </DialogContent>
       <DialogActions>

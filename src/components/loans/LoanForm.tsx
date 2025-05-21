@@ -58,6 +58,7 @@ interface LoanFormProps {
   isEdit?: boolean;
   unavailableItems?: Item[];
   conflictingReservations?: ConflictingReservation[];
+  currentUser?: User;
 }
 
 /**
@@ -73,7 +74,8 @@ const LoanForm: React.FC<LoanFormProps> = ({
   loading = false,
   isEdit = false,
   unavailableItems = [],
-  conflictingReservations = []
+  conflictingReservations = [],
+  currentUser
 }) => {
   // États locaux pour les prêts multiples
   const [selectedItems, setSelectedItems] = useState<Item[]>(
@@ -242,6 +244,19 @@ const LoanForm: React.FC<LoanFormProps> = ({
       (startDate <= resStart && dueDate >= resEnd)
     );
   });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    // Ajouter l'ID de l'administrateur aux données du prêt
+    const loanData = {
+      ...loan,
+      performedById: currentUser?.id
+    };
+
+    onChange(loanData);
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, my: 2 }}>

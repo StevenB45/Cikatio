@@ -79,12 +79,30 @@ export interface Loan extends BaseEntity {
   borrowerId: string;
   borrowedAt: Date;
   dueAt: Date;
-  returnedAt?: Date;
+  returnedAt?: Date | null;
   status: LoanStatus;
-  contexts?: LoanContext[];
-  // Pour l'affichage
+  notes?: string | null;
+  contexts: LoanContext[];
+  createdAt: Date;
+  updatedAt: Date;
+  performedById?: string | null;
   borrower?: User;
-  isVirtual?: boolean;
+  item?: Item;
+  performedBy?: User | null;
+}
+
+export interface Reservation extends BaseEntity {
+  itemId: string;
+  userId: string;
+  startDate: Date;
+  endDate: Date;
+  status: 'AVAILABLE' | 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'BORROWED' | 'OUT_OF_ORDER';
+  createdAt: Date;
+  updatedAt: Date;
+  performedById?: string | null;
+  user?: User;
+  item?: Item;
+  performedBy?: User | null;
 }
 
 export type StatusType = 'ACTIVE' | 'OVERDUE' | 'RETURNED' | 'OUT_OF_ORDER' | 'AVAILABLE' | 'RESERVED' | 'BORROWED' | 'LOST';
