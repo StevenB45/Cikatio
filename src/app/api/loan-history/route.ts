@@ -123,6 +123,39 @@ export async function GET(request: Request) {
           formattedDate = dateObj.toLocaleDateString('fr-FR');
         }
       }
+      
+      // Formatage des dates additionnelles si elles existent dans le prêt complet
+      let borrowedAtFormatted = 'Non spécifiée';
+      let dueAtFormatted = 'Non spécifiée';
+      
+      // Pour les actions ACTIVE (prêt), utiliser directement la date de l'action
+      if (lh.status === 'ACTIVE' && formattedDate !== '-') {
+        borrowedAtFormatted = formattedDate;
+      }
+      // Pour les autres cas, essayer d'utiliser la date du prêt
+      else if (loanComplete) {
+        try {
+          if (loanComplete.borrowedAt) {
+            const borrowedDate = new Date(loanComplete.borrowedAt);
+            if (!isNaN(borrowedDate.getTime())) {
+              borrowedAtFormatted = borrowedDate.toLocaleDateString('fr-FR');
+            } else {
+              console.warn(`Date d'emprunt invalide pour le prêt ${loanComplete.id}: ${loanComplete.borrowedAt}`);
+            }
+          }
+          
+          if (loanComplete.dueAt) {
+            const dueDate = new Date(loanComplete.dueAt);
+            if (!isNaN(dueDate.getTime())) {
+              dueAtFormatted = dueDate.toLocaleDateString('fr-FR');
+            } else {
+              console.warn(`Date de retour prévue invalide pour le prêt ${loanComplete.id}: ${loanComplete.dueAt}`);
+            }
+          }
+        } catch (error) {
+          console.error('Erreur lors du formatage des dates du prêt:', error);
+        }
+      }
         
       return {
         id: lh.id,
@@ -136,6 +169,8 @@ export async function GET(request: Request) {
         status: lh.status,
         comment: comment,
         loanId: lh.loanId,
+        borrowedAt: borrowedAtFormatted,
+        dueAt: dueAtFormatted,
         performedById: lh.performedById,
         performedBy: performedByUser ? {
           firstName: performedByUser.firstName || '',

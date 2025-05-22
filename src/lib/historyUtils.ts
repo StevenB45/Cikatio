@@ -214,9 +214,10 @@ export async function fetchItemHistory(itemId: string): Promise<HistoryItem[]> {
         type: 'loan_status_change',
         id: lsh.id,
         returnedAt: lsh.status === 'RETURNED' ? formatDate(lsh.date) : null,
-        // Ajouter les dates de prêt et de retour prévu si disponibles
-        borrowedAt: loan.borrowedAt ? formatDate(loan.borrowedAt) : undefined,
-        dueAt: loan.dueAt ? formatDate(loan.dueAt) : undefined,
+        // Ajouter les dates de prêt et de retour prévu si disponibles, ou utiliser la date principale pour les actions correspondantes
+        borrowedAt: (lsh.status === 'ACTIVE') ? formatDate(lsh.date) : 
+                   (loan.borrowedAt ? formatDate(loan.borrowedAt) : 'Non spécifiée'),
+        dueAt: loan.dueAt ? formatDate(loan.dueAt) : 'Non spécifiée',
         performedBy: lsh.performedBy ? {
           firstName: lsh.performedBy.firstName || '',
           lastName: lsh.performedBy.lastName || ''
@@ -283,7 +284,11 @@ export async function fetchUserHistory(userId: string): Promise<HistoryItem[]> {
         comment: `Réservation du ${formatDate(r.startDate)} au ${formatDate(r.endDate)}`,
         returnedAt: null,
         type: 'reservation',
-        id: r.id
+        id: r.id,
+        performedBy: r.performedBy ? {
+          firstName: r.performedBy.firstName || '',
+          lastName: r.performedBy.lastName || ''
+        } : undefined
       }));
     }
 
@@ -305,7 +310,11 @@ export async function fetchUserHistory(userId: string): Promise<HistoryItem[]> {
           comment: r.comment || '',
           returnedAt: null,
           type: 'reservation_action',
-          id: r.id
+          id: r.id,
+          performedBy: r.performedBy ? {
+            firstName: r.performedBy.firstName || '',
+            lastName: r.performedBy.lastName || ''
+          } : undefined
         };
       });
     } else {
@@ -338,8 +347,15 @@ export async function fetchUserHistory(userId: string): Promise<HistoryItem[]> {
             rawStatus: lh.status,
             comment: comment,
             returnedAt: lh.status === 'RETURNED' ? formatDate(lh.date) : null,
+            borrowedAt: (lh.status === 'ACTIVE') ? formatDate(lh.date) :
+                       (lh.borrowedAt ? formatDate(lh.borrowedAt) : 'Non spécifiée'),
+            dueAt: lh.dueAt ? formatDate(lh.dueAt) : 'Non spécifiée',
             type: 'loan_status_change',
-            id: lh.id
+            id: lh.id,
+            performedBy: lh.performedBy ? {
+              firstName: lh.performedBy.firstName || '',
+              lastName: lh.performedBy.lastName || ''
+            } : undefined
           };
         });
       } catch (error) {

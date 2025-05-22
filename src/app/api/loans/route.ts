@@ -251,7 +251,15 @@ export async function POST(request: Request) {
     try {
       // Vérification du statut de l'item
       const item = await prisma.item.findUnique({ 
-        where: { id: data.itemId } 
+        where: { id: data.itemId },
+        include: {
+          loans: {
+            where: {
+              status: { in: ['ACTIVE', 'OVERDUE'] },
+              returnedAt: null
+            }
+          }
+        }
       });
       
       if (!item) {
@@ -267,6 +275,17 @@ export async function POST(request: Request) {
           details: { currentStatus: item.reservationStatus }
         }, { status: 400 });
       }
+      
+      // Vérification supplémentaire : s'assurer qu'il n'y a pas de prêts actifs pour cet item
+      if (item.loans && item.loans.length > 0) {
+        return NextResponse.json({ 
+          error: "Cet item est déjà emprunté et ne peut pas être prêté à nouveau",
+          details: { 
+            activeLoans: item.loans.length,
+            currentStatus: item.reservationStatus 
+          }
+        }, { status: 409 });
+      }
 
       // Vérification de l'emprunteur
       const borrower = await prisma.user.findUnique({
@@ -281,6 +300,7 @@ export async function POST(request: Request) {
       }
 
       // Vérifier s'il existe déjà des prêts planifiés pour cet item sur la période demandée
+      // Cette vérification utilise une condition nécessaire et suffisante pour détecter un chevauchement entre deux intervalles de dates
       const existingLoans = await prisma.loan.findMany({
         where: {
           itemId: data.itemId,
@@ -297,6 +317,8 @@ export async function POST(request: Request) {
           borrower: true
         }
       });
+      
+      console.log(`Vérification des prêts existants pour l'item ${data.itemId}: ${existingLoans.length} prêts trouvés`);
       
       if (existingLoans.length > 0) {
         const conflictingLoans = existingLoans.map(loan => ({

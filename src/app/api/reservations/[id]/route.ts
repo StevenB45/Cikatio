@@ -160,6 +160,7 @@ export async function PUT(
             data: {
               itemId: existingReservation.itemId,
               userId: userIdForHistory,
+              performedById: modifiedById || userIdForHistory,
               action: 'MODIFY_FAILED',
               date: new Date(),
               comment: comment
@@ -192,6 +193,7 @@ export async function PUT(
           data: {
             itemId: existingReservation.itemId,
             userId: userIdForHistory,
+            performedById: modifiedById || userIdForHistory,
             action: 'UNAUTHORIZED_MODIFY',
             date: new Date(),
             comment: comment
@@ -335,6 +337,7 @@ export async function DELETE(
         data: {
           itemId: existingReservation.itemId,
           userId: userIdForHistory,
+          performedById: cancelledById || userIdForHistory,
           action: 'CANCEL',
           date: new Date(),
           comment: comment

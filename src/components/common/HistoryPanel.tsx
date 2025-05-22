@@ -81,14 +81,32 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({
       parts.push(item.user);
     }
     
-    // Ajouter la date
-    if (item.date) {
+    const invalidDateMarkers = ['Invalid Date', '-', 'Non spécifiée', 'Date invalide', 'Erreur de date'];
+
+    // Pour les emprunts (ACTIVE), ajouter la date d'emprunt en priorité
+    if (item.action === 'Emprunt' && item.borrowedAt && !invalidDateMarkers.includes(item.borrowedAt)) {
+      parts.push(`Emprunté le ${item.borrowedAt}`);
+    }
+    // Pour les retours (RETURNED), ajouter la date de retour en priorité
+    else if (item.action === 'Retour' && item.returnedAt && !invalidDateMarkers.includes(item.returnedAt)) {
+      parts.push(`Retourné le ${item.returnedAt}`);
+    }
+    // Pour les autres cas, ajouter la date principale si elle est valide
+    else if (item.date && !invalidDateMarkers.includes(item.date)) {
       parts.push(item.date);
     }
     
-    // Ajouter la date de retour si elle existe et n'est pas déjà mentionnée
-    if (item.returnedAt && !item.comment?.includes(item.returnedAt) && item.action === 'Retour') {
-      parts.push(`Retourné le ${item.returnedAt}`);
+    // Ajouter la date de retour prévue si elle existe et est valide (mais n'a pas déjà été ajoutée)
+    if (item.dueAt && 
+        !invalidDateMarkers.includes(item.dueAt) &&
+        !parts.some(p => p.includes(`Retour prévu le ${item.dueAt}`))) {
+      parts.push(`Retour prévu le ${item.dueAt}`);
+    }
+    
+    if (item.dueAt && 
+        !invalidDateMarkers.includes(item.dueAt) &&
+        !parts.some(p => p.includes(`Retour prévu le ${item.dueAt}`))) {
+      parts.push(`Retour prévu le ${item.dueAt}`);
     }
     
     // Ajouter l'information sur qui a effectué l'action si elle existe et est demandée

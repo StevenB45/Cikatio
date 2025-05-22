@@ -82,6 +82,7 @@ export async function PUT(
         data: {
           itemId: id,
           userId: updateData.reservedById,
+          performedById: updateData.performedById || updateData.reservedById,
           action: 'RESERVE',
           date: new Date(),
         }
@@ -91,6 +92,7 @@ export async function PUT(
         data: {
           itemId: id,
           userId: updateData.previousReservedById,
+          performedById: updateData.performedById || updateData.previousReservedById,
           action: 'CANCEL',
           date: new Date(),
         }

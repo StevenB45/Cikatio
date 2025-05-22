@@ -85,13 +85,17 @@ export async function POST(
         // 4. If there's an item, update its status
         if (updatedLoan.itemId) {
           try {
-            // NOUVELLE VÉRIFICATION: Vérifier s'il existe des prêts actifs pour cet item
+            // VÉRIFICATION AMÉLIORÉE: Vérifier s'il existe des prêts actifs pour cet item
+            // Nous utilisons la transaction (tx) pour avoir l'état le plus récent de la base de données
             const activeLoans = await tx.loan.findMany({
               where: {
                 itemId: updatedLoan.itemId,
                 id: { not: id }, // Exclure le prêt actuel
                 status: { in: ['ACTIVE', 'OVERDUE'] }, // Prêts actifs ou en retard
-                returnedAt: null // Non retournés
+                returnedAt: null, // Non retournés
+              },
+              orderBy: { // Ajout de l'ordre pour debugging
+                borrowedAt: 'desc'
               }
             });
             
@@ -142,12 +146,28 @@ export async function POST(
                 console.log(`Item has no pending reservations or loans - setting status to AVAILABLE`);
               }
               
-              // Update the item status
-              await tx.item.update({
-                where: { id: updatedLoan.itemId },
-                data: { reservationStatus: newStatus }
+              // Effectuer une double vérification juste avant la mise à jour
+              // Cette étape est cruciale pour éviter les problèmes de concurrence
+              const finalCheck = await tx.loan.count({
+                where: {
+                  itemId: updatedLoan.itemId,
+                  id: { not: id },
+                  status: { in: ['ACTIVE', 'OVERDUE'] },
+                  returnedAt: null
+                }
               });
-              console.log(`Item status updated to ${newStatus}`);
+              
+              if (finalCheck > 0) {
+                console.log(`DERNIER CONTRÔLE: ${finalCheck} prêts actifs trouvés - l'item reste BORROWED`);
+                // Ne pas modifier le statut car il y a encore des prêts actifs
+              } else {
+                // Update the item status seulement si aucun prêt actif n'existe
+                await tx.item.update({
+                  where: { id: updatedLoan.itemId },
+                  data: { reservationStatus: newStatus }
+                });
+                console.log(`Item status updated to ${newStatus}`);
+              }
             } else {
               console.log(`Item still has ${activeLoans.length} active loans - keeping status as BORROWED`);
               // L'item reste emprunté car il a d'autres prêts actifs

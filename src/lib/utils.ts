@@ -2,11 +2,22 @@
 
 /**
  * Formate une date en chaîne locale française (ex: 22/04/2025)
+ * Retourne une chaîne personnalisée pour les dates invalides
  */
 export function formatDate(date: Date | string | undefined | null): string {
-  if (!date) return '';
-  const d = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
-  return d.toLocaleDateString('fr-FR');
+  if (!date) return 'Non spécifiée';
+  try {
+    const d = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
+    // Vérifier si la date est valide
+    if (isNaN(d.getTime())) {
+      console.warn(`formatDate: Date invalide reçue: ${date}`);
+      return 'Date invalide';
+    }
+    return d.toLocaleDateString('fr-FR');
+  } catch (error) {
+    console.error(`Erreur lors du formatage de la date: ${date}`, error);
+    return 'Erreur de date';
+  }
 }
 
 /**

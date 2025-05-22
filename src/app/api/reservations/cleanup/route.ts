@@ -29,6 +29,7 @@ export async function POST(request: Request) {
         data: {
           itemId: reservation.itemId,
           userId: reservation.userId,
+          performedById: null, // Automatique (pas d'administrateur spécifique)
           action: 'EXPIRED',
           date: new Date(),
           comment: `Réservation expirée automatiquement - ${itemName} réservé du ${startDate} au ${endDate} pour ${userName}`
