@@ -459,32 +459,30 @@ const LoanForm: React.FC<LoanFormProps> = ({
       </Box>
       
       {/* Contextes de la demande */}
-      <FormControl component="fieldset">
-        <Typography variant="subtitle2" gutterBottom>
+      <Box sx={{ mt: 2, mb: 3 }}>
+        <Typography variant="subtitle1" sx={{ mb: 2 }}>
           Contexte de la demande
         </Typography>
-        <FormGroup>
-          <Grid container spacing={2}>
-            {Object.entries(contextLabels).map(([key, label]) => (
-              <Grid xs={12} md={4} key={key}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={selectedContexts.includes(key as LoanContext)}
-                      onChange={() => handleContextChange(key as LoanContext)}
-                      disabled={loading}
-                    />
-                  }
-                  label={label}
-                />
-              </Grid>
-            ))}
-          </Grid>
-        </FormGroup>
+        <Grid container spacing={2}>
+          {Object.entries(contextLabels).map(([key, label]) => (
+            <Grid item xs={12} sm={6} md={4} key={key}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={selectedContexts.includes(key as LoanContext)}
+                    onChange={() => handleContextChange(key as LoanContext)}
+                    disabled={loading}
+                  />
+                }
+                label={label}
+              />
+            </Grid>
+          ))}
+        </Grid>
         {errors.contexts && (
           <FormHelperText error>{errors.contexts}</FormHelperText>
         )}
-      </FormControl>
+      </Box>
 
       {/* Notes */}
       <TextField
