@@ -86,7 +86,7 @@ export const useExcelExport = (
       const reservedItemIds = new Set(reservations.map(r => r.itemId));
       const itemsBorrowedInPeriod = items.filter(i => borrowedItemIds.has(i.id)).length;
       const itemsReservedInPeriod = items.filter(i => reservedItemIds.has(i.id)).length;
-      const itemsAvailableInPeriod = items.length - itemsBorrowedInPeriod - itemsReservedInPeriod;
+      const itemsAvailableInPeriod = items.filter(i => !borrowedItemIds.has(i.id) && !reservedItemIds.has(i.id)).length;
       const totalLoansInPeriod = filteredLoans.length;
       const loansActiveInPeriod = filteredLoans.filter(l => l.status === 'ACTIVE').length;
       const loansOverdueInPeriod = filteredLoans.filter(l => l.status === 'OVERDUE').length;

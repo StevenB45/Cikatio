@@ -22,8 +22,6 @@ import {
   Warning as WarningIcon,
   EventBusy as ConflictIcon
 } from '@mui/icons-material';
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import { fr } from 'date-fns/locale';
 import { Item, User, LoanContext } from '@/types';
 
@@ -397,54 +395,65 @@ const LoanForm: React.FC<LoanFormProps> = ({
         <Grid container spacing={3} alignItems="flex-end">
           {/* Date de début */}
           <Grid item xs={12} md={6} sx={{ mb: { xs: 2, md: 0 } }}>
-            <FormControl fullWidth>
-              <DatePicker
-                selected={startDate}
-                onChange={handleStartDateChange}
-                locale={fr}
-                dateFormat="dd/MM/yyyy"
-                disabled={loading || (isEdit && !!loan.id)}
-                customInput={
-                  <TextField
-                    fullWidth
-                    label="Date de début d'emprunt"
-                    required
-                    error={!!errors.borrowedAt || hasDateConflict}
-                    helperText={errors.borrowedAt}
-                    InputLabelProps={{ shrink: true }}
-                  />
+            <TextField
+              label="Date de début d'emprunt"
+              type="date"
+              value={startDate ? startDate.toISOString().slice(0, 10) : ''}
+              onChange={e => {
+                const val = e.target.value;
+                if (val) {
+                  const d = new Date(val);
+                  if (d > new Date()) return;
+                  setStartDate(d);
+                  onChange({ ...loan, borrowedAt: d });
+                } else {
+                  setStartDate(today);
+                  onChange({ ...loan, borrowedAt: today });
                 }
-                popperPlacement="bottom-start"
-                popperProps={{ positionFixed: true }}
-                popperClassName="date-picker-popper"
-              />
-            </FormControl>
+              }}
+              fullWidth
+              required
+              size="small"
+              inputProps={{
+                max: dueDate ? dueDate.toISOString().slice(0, 10) : undefined,
+                inputMode: 'numeric',
+                pattern: '[0-9]{4}-[0-9]{2}-[0-9]{2}'
+              }}
+              InputLabelProps={{ shrink: true }}
+              error={!!errors.borrowedAt}
+              helperText={errors.borrowedAt || 'Format attendu : JJ/MM/AAAA'}
+            />
           </Grid>
           {/* Date de retour */}
           <Grid item xs={12} md={6}>
-            <FormControl fullWidth>
-              <DatePicker
-                selected={dueDate}
-                onChange={handleDueDateChange}
-                locale={fr}
-                dateFormat="dd/MM/yyyy"
-                minDate={new Date()}
-                disabled={loading}
-                customInput={
-                  <TextField
-                    fullWidth
-                    label="Date de retour prévue"
-                    required
-                    error={!!errors.dueAt || hasDateConflict}
-                    helperText={errors.dueAt}
-                    InputLabelProps={{ shrink: true }}
-                  />
+            <TextField
+              label="Date de retour prévue"
+              type="date"
+              value={dueDate ? dueDate.toISOString().slice(0, 10) : ''}
+              onChange={e => {
+                const val = e.target.value;
+                if (val) {
+                  const d = new Date(val);
+                  if (d < startDate) return;
+                  setDueDate(d);
+                  onChange({ ...loan, dueAt: d });
+                } else {
+                  setDueDate(twoWeeksLater);
+                  onChange({ ...loan, dueAt: twoWeeksLater });
                 }
-                popperPlacement="bottom-start"
-                popperProps={{ positionFixed: true }}
-                popperClassName="date-picker-popper"
-              />
-            </FormControl>
+              }}
+              fullWidth
+              required
+              size="small"
+              inputProps={{
+                min: startDate ? startDate.toISOString().slice(0, 10) : undefined,
+                inputMode: 'numeric',
+                pattern: '[0-9]{4}-[0-9]{2}-[0-9]{2}'
+              }}
+              InputLabelProps={{ shrink: true }}
+              error={!!errors.dueAt}
+              helperText={errors.dueAt || 'Format attendu : JJ/MM/AAAA'}
+            />
           </Grid>
         </Grid>
       </Box>
